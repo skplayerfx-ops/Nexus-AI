@@ -59,7 +59,8 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
-  root: path.resolve(import.meta.dirname),
+  // The user-facing UI lives in the workspace root as index.html.
+  root: path.resolve(import.meta.dirname, '..', '..'),
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,

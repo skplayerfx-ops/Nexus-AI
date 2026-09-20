@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f0e8" />
+    <link rel="icon" href="data:," />
+    <title>Nexus-AI</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+      :root {
+        color-scheme: light;
+        --canvas: #f5f0e8;
+        --paper: #fbf8f3;
+        --paper-strong: #fffdf9;
+        --ink: #203034;
+        --muted: #7c817e;
+        --line: #ddd9d1;
+        --line-strong: #ccc9c1;
+        --teal: #277f80;
+        --teal-dark: #1f6668;
+        --teal-soft: #dcebea;
+        --amber: #e5a23b;
+        --shadow: 0 14px 34px rgba(48, 56, 53, 0.07);
+        --sans: "Plus Jakarta Sans", system-ui, sans-serif;
+        --display: "Space Grotesk", system-ui, sans-serif;
+        --mono: "DM Mono", ui-monospace, monospace;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 14px;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: .18;
+        background-image: radial-gradient(rgba(33, 49, 47, .2) .5px, transparent .5px);
+        background-size: 4px 4px;
+        mix-blend-mode: multiply;
+      }
+      button, textarea, select { font: inherit; }
+      button { cursor: pointer; }
+      .app { min-height: 100vh; display: grid; grid-template-columns: 285px 315px minmax(0, 1fr); }
+      .sidebar, .recent { border-right: 1px solid var(--line); background: rgba(251,248,243,.76); }
+      .sidebar { display: flex; flex-direction: column; padding: 22px 20px; }
+      .brand { display: flex; align-items: center; gap: 12px; margin: 0 0 38px; }
+      .brand-mark {
+        width: 38px; height: 38px; border-radius: 12px; background: var(--teal);
+        color: white; display: grid; place-items: center; font-family: var(--display);
+        font-size: 18px; font-weight: 700; position: relative; box-shadow: 0 8px 16px rgba(39,127,128,.2);
+      }
+      .brand-mark::after { content: ""; width: 7px; height: 7px; background: var(--amber); border-radius: 50%; position: absolute; right: -2px; top: -2px; }
+      .brand-name { font-family: var(--display); font-size: 18px; font-weight: 600; letter-spacing: -.04em; }
+      .new-chat {
+        border: 0; border-radius: 14px; background: var(--teal); color: white; padding: 13px 16px;
+        display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;
+        transition: transform .2s ease, background .2s ease; box-shadow: 0 10px 22px rgba(39,127,128,.16);
+      }
+      .new-chat:hover { background: var(--teal-dark); transform: translateY(-1px); }
+      .nav { display: grid; gap: 5px; margin-top: auto; }
+      .nav button {
+        border: 0; background: transparent; color: var(--muted); border-radius: 12px; padding: 12px 14px;
+        text-align: left; display: flex; align-items: center; gap: 10px; transition: background .2s, color .2s;
+      }
+      .nav button:hover, .nav button.active { background: #e9e4db; color: var(--ink); }
+      .nav-icon { width: 18px; text-align: center; font-family: var(--mono); font-size: 13px; }
+      .system { border-top: 1px solid var(--line); margin-top: 24px; padding: 20px 2px 5px; color: var(--muted); font: 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+      .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #58a878; }
+      .recent { padding: 28px 20px; overflow: auto; }
+      .eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .18em; font: 10px var(--mono); }
+      .recent-heading { display: flex; justify-content: space-between; align-items: end; margin: 8px 4px 16px; }
+      .recent-heading span:last-child { color: var(--muted); font-size: 12px; }
+      .add { border: 0; background: transparent; color: var(--teal); font-size: 24px; line-height: 1; padding: 0 4px; }
+      .conversation-list { display: grid; gap: 5px; }
+      .conversation {
+        border: 1px solid transparent; background: transparent; text-align: left; border-radius: 16px; padding: 14px 12px;
+        color: var(--ink); transition: border .2s, background .2s, transform .2s;
+      }
+      .conversation:hover { background: rgba(255,253,249,.7); transform: translateY(-1px); }
+      .conversation.active { border-color: var(--line-strong); background: rgba(255,253,249,.72); box-shadow: var(--shadow); }
+      .conversation-title { font-family: var(--display); font-weight: 600; font-size: 14px; margin-bottom: 7px; }
+      .conversation-preview { color: var(--muted); font-size: 12px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .conversation-meta { margin-top: 10px; color: var(--muted); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+      .main { min-width: 0; display: flex; flex-direction: column; background: rgba(245,240,232,.6); }
+      .topbar { height: 76px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; }
+      .top-title small { display: block; color: var(--muted); font: 10px var(--mono); letter-spacing: .18em; text-transform: uppercase; margin-bottom: 6px; }
+      .top-title h1 { font: 600 18px var(--display); margin: 0; letter-spacing: -.03em; }
+      .preferences { border: 1px solid var(--line); border-radius: 999px; background: rgba(255,253,249,.58); color: var(--muted); padding: 9px 14px; display: flex; align-items: center; gap: 11px; }
+      .preferences:hover { color: var(--ink); border-color: var(--line-strong); }
+      .thread { flex: 1; min-height: 0; overflow: auto; padding: 50px clamp(28px, 7vw, 112px) 28px; }
+      .thread-label { color: var(--muted); font: 10px var(--mono); letter-spacing: .18em; text-transform: uppercase; display: flex; align-items: center; gap: 9px; }
+      .thread-label::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+      .messages { display: grid; gap: 27px; max-width: 780px; margin: 36px 0 30px auto; }
+      .message { display: flex; gap: 12px; align-items: flex-start; animation: enter .35s ease both; }
+      .message.user { justify-content: flex-end; }
+      .avatar { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--teal); color: white; display: grid; place-items: center; font: 12px var(--mono); margin-top: 4px; }
+      .message-body { max-width: min(690px, 82%); }
+      .bubble { border: 1px solid var(--line); background: rgba(255,253,249,.78); border-radius: 16px; padding: 16px 18px; line-height: 1.8; box-shadow: 0 5px 13px rgba(45,52,49,.04); }
+      .user .bubble { border-color: var(--teal); background: var(--teal); color: white; border-radius: 16px 16px 5px 16px; box-shadow: 0 9px 20px rgba(39,127,128,.13); }
+      .message-meta { color: var(--muted); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; margin-top: 8px; }
+      .user .message-meta { text-align: right; }
+      .composer-wrap { border-top: 1px solid var(--line); padding: 16px clamp(18px, 5vw, 78px) 24px; }
+      .composer { max-width: 820px; margin: 0 auto; border: 1px solid var(--line); background: rgba(255,253,249,.86); border-radius: 16px; padding: 13px 14px 10px 16px; box-shadow: var(--shadow); }
+      textarea { border: 0; outline: 0; resize: none; width: 100%; min-height: 58px; background: transparent; color: var(--ink); line-height: 1.6; }
+      textarea::placeholder { color: #a0a29e; }
+      .composer-actions { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+      .send { border: 0; background: #b7d2d0; color: white; width: 32px; height: 32px; border-radius: 50%; transition: background .2s, transform .2s; }
+      .send.ready { background: var(--teal); }
+      .send:hover { transform: translateY(-1px); background: var(--teal-dark); }
+      .composer-note { max-width: 820px; margin: 8px auto 0; text-align: right; color: var(--muted); font: 10px var(--mono); }
+      .settings {
+        position: fixed; z-index: 10; top: 84px; right: 32px; width: min(330px, calc(100vw - 32px)); border: 1px solid var(--line);
+        background: var(--paper-strong); border-radius: 16px; padding: 20px; box-shadow: 0 20px 55px rgba(37,47,45,.18); display: none;
+      }
+      .settings.open { display: block; animation: enter .2s ease both; }
+      .settings h2 { margin: 0 0 4px; font: 600 18px var(--display); }
+      .settings p { color: var(--muted); margin: 0 0 20px; font-size: 12px; line-height: 1.5; }
+      .setting { display: grid; gap: 7px; margin-top: 16px; }
+      .setting label { font: 10px var(--mono); letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+      select { border: 1px solid var(--line); color: var(--ink); background: var(--canvas); border-radius: 9px; padding: 10px; outline: 0; }
+      .toggle-row { display: flex; justify-content: space-between; align-items: center; }
+      .toggle { width: 40px; height: 23px; border: 0; border-radius: 999px; background: var(--line-strong); padding: 3px; }
+      .toggle span { display: block; width: 17px; height: 17px; border-radius: 50%; background: white; transition: transform .2s; }
+      .toggle.on { background: var(--teal); }
+      .toggle.on span { transform: translateX(17px); }
+      .mobile-menu, .mobile-recent { display: none; }
+      .empty { color: var(--muted); padding: 34px 8px; line-height: 1.6; }
+      .error { color: #a45b49; border: 1px solid #dfc2b7; background: #fff1eb; padding: 12px; border-radius: 10px; }
+      @keyframes enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+      @media (max-width: 950px) { .app { grid-template-columns: 240px 280px minmax(0,1fr); } .topbar { padding: 0 24px; } }
+      @media (max-width: 740px) {
+        .app { display: block; }
+        .sidebar, .recent { display: none; }
+        .main { min-height: 100vh; }
+        .mobile-menu, .mobile-recent { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--ink); }
+        .mobile-menu { position: absolute; left: 16px; }
+        .mobile-recent { position: absolute; right: 16px; }
+        .topbar { height: 76px; justify-content: center; padding: 0 58px; text-align: center; }
+        .top-title h1 { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+        .thread { padding: 36px 20px 20px; }
+        .messages { margin-top: 28px; }
+        .message-body { max-width: 88%; }
+        .composer-wrap { padding: 16px 16px 18px; }
+        .composer-note { display: none; }
+        .settings { top: 82px; right: 16px; }
+        .mobile-panel { display: block; position: fixed; inset: 0; z-index: 20; background: rgba(32,48,52,.2); }
+        .mobile-panel-card { position: absolute; left: 0; top: 0; bottom: 0; width: min(320px, 88vw); background: var(--paper); padding: 22px 20px; overflow: auto; box-shadow: 12px 0 34px rgba(32,48,52,.12); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><div class="brand-mark">N</div><div class="brand-name">nexus</div></div>
+        <button class="new-chat" id="newChat"><span>＋</span> New conversation</button>
+        <nav class="nav">
+          <button class="active"><span class="nav-icon">⌁</span> Workspace</button>
+          <button id="settingsNav"><span class="nav-icon">≋</span> Settings</button>
+        </nav>
+        <div class="system"><span class="status-dot"></span> Systems ready</div>
+      </aside>
+
+      <aside class="recent">
+        <div class="eyebrow">Your thinking</div>
+        <div class="recent-heading"><span>Recent conversations</span><button class="add" id="addConversation">＋</button></div>
+        <div class="conversation-list" id="conversationList"><div class="empty">Loading your conversations…</div></div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobileMenu" aria-label="Open conversations">☰</button>
+          <div class="top-title"><small>Nexus workspace</small><h1 id="threadTitle">New conversation</h1></div>
+          <button class="preferences" id="preferences">Preferences <span>›</span></button>
+          <button class="mobile-recent" id="mobileRecent" aria-label="Open conversations">▯</button>
+        </header>
+        <section class="thread" id="thread">
+          <div class="thread-label">Thread in focus</div>
+          <div class="messages" id="messages"></div>
+        </section>
+        <section class="composer-wrap">
+          <form class="composer" id="composer">
+            <textarea id="prompt" placeholder="Write what is on your mind…" aria-label="Message Nexus-AI"></textarea>
+            <div class="composer-actions"><span>⌘ Enter to send</span><button class="send" id="send" type="submit" aria-label="Send message">↑</button></div>
+          </form>
+          <div class="composer-note">↵ Shift + Enter for a new line</div>
+        </section>
+      </main>
+    </div>
+
+    <section class="settings" id="settings">
+      <h2>Preferences</h2>
+      <p>Shape the workspace around the way you think. These choices are saved locally.</p>
+      <div class="setting"><label for="model">Response model</label><select id="model"><option>Nexus Core</option><option>Nexus Focus</option><option>Nexus Explore</option></select></div>
+      <div class="setting toggle-row"><label for="voice">Voice responses</label><button class="toggle" id="voice" aria-label="Toggle voice responses"><span></span></button></div>
+      <div class="setting toggle-row"><label for="dark">Night canvas</label><button class="toggle" id="dark" aria-label="Toggle night canvas"><span></span></button></div>
+    </section>
+
+    <script>
+      const state = { conversations: [], activeId: null, messages: [], settings: JSON.parse(localStorage.getItem("nexus-settings") || "{}") };
+      const $ = (id) => document.getElementById(id);
+      const list = $("conversationList"), messages = $("messages"), prompt = $("prompt");
+
+      function timeLabel(value) {
+        const date = new Date(value), minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+        if (minutes < 1) return "just now";
+        if (minutes < 60) return `${minutes} min ago`;
+        if (minutes < 1440) return `${Math.floor(minutes / 60)} hr ago`;
+        return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
+
+      function renderList() {
+        if (!state.conversations.length) { list.innerHTML = '<div class="empty">No conversations yet. Start with a question.</div>'; return; }
+        list.innerHTML = state.conversations.map((item) => `
+          <button class="conversation ${item.id === state.activeId ? "active" : ""}" data-id="${item.id}">
+            <div class="conversation-title">${escapeHtml(item.title)}</div>
+            <div class="conversation-preview">${escapeHtml(item.preview)}</div>
+            <div class="conversation-meta">◷ ${item.messageCount} messages · ${timeLabel(item.updatedAt)}</div>
+          </button>`).join("");
+        list.querySelectorAll("[data-id]").forEach((button) => button.addEventListener("click", () => selectConversation(button.dataset.id)));
+      }
+
+      function renderMessages() {
+        messages.innerHTML = state.messages.length ? state.messages.map((item) => `
+          <article class="message ${item.role}">
+            ${item.role === "assistant" ? '<div class="avatar">✣</div>' : ""}
+            <div class="message-body"><div class="bubble">${escapeHtml(item.content)}</div><div class="message-meta">${item.role === "assistant" ? "Nexus" : "You"} · ${timeLabel(item.createdAt)}</div></div>
+          </article>`).join("") : '<div class="empty">This is a fresh space. Ask Nexus to help you think through a problem, shape a draft, or make a plan.</div>';
+        $("thread").scrollTop = $("thread").scrollHeight;
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+      }
+
+      async function loadConversations(selectFirst = true) {
+        const response = await fetch("/api/conversations");
+        if (!response.ok) throw new Error("Could not load conversations");
+        state.conversations = await response.json();
+        renderList();
+        if (selectFirst && !state.activeId && state.conversations[0]) await selectConversation(state.conversations[0].id);
+      }
+
+      async function selectConversation(id) {
+        state.activeId = id;
+        renderList();
+        const response = await fetch(`/api/conversations/${encodeURIComponent(id)}`);
+        if (!response.ok) throw new Error("Could not load this conversation");
+        const item = await response.json();
+        state.messages = item.messages;
+        $("threadTitle").textContent = item.title;
+        renderMessages();
+      }
+
+      function startNewConversation() {
+        state.activeId = null; state.messages = [];
+        $("threadTitle").textContent = "New conversation";
+        renderList(); renderMessages(); prompt.focus();
+      }
+
+      async function sendMessage(event) {
+        event.preventDefault();
+        const text = prompt.value.trim();
+        if (!text) return;
+        const send = $("send"); send.disabled = true; prompt.value = "";
+        state.messages.push({ role: "user", content: text, createdAt: new Date().toISOString() });
+        renderMessages();
+        try {
+          const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: state.activeId, prompt: text }) });
+          if (!response.ok) throw new Error("The assistant could not respond");
+          const result = await response.json();
+          state.activeId = result.conversation.id; state.messages = result.conversation.messages;
+          $("threadTitle").textContent = result.conversation.title;
+          await loadConversations(false); renderMessages();
+        } catch (error) {
+          state.messages.push({ role: "assistant", content: error.message, createdAt: new Date().toISOString() });
+          renderMessages();
+        } finally { send.disabled = false; prompt.focus(); }
+      }
+
+      function toggleSettings() { $("settings").classList.toggle("open"); }
+      function saveSettings() { localStorage.setItem("nexus-settings", JSON.stringify(state.settings)); }
+      function applyTheme() { document.documentElement.style.colorScheme = state.settings.dark ? "dark" : "light"; if (state.settings.dark) { document.documentElement.style.setProperty("--canvas", "#1b292b"); document.documentElement.style.setProperty("--paper", "#233638"); document.documentElement.style.setProperty("--paper-strong", "#2a4143"); document.documentElement.style.setProperty("--ink", "#e9f0eb"); document.documentElement.style.setProperty("--muted", "#a4b1aa"); document.documentElement.style.setProperty("--line", "#3b5150"); } }
+
+      $("composer").addEventListener("submit", sendMessage);
+      prompt.addEventListener("input", () => $("send").classList.toggle("ready", Boolean(prompt.value.trim())));
+      prompt.addEventListener("keydown", (event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) sendMessage(event); });
+      $("newChat").addEventListener("click", startNewConversation); $("addConversation").addEventListener("click", startNewConversation);
+      $("preferences").addEventListener("click", toggleSettings); $("settingsNav").addEventListener("click", toggleSettings);
+      $("model").addEventListener("change", (event) => { state.settings.model = event.target.value; saveSettings(); });
+      $("voice").addEventListener("click", () => { state.settings.voice = !state.settings.voice; $("voice").classList.toggle("on", state.settings.voice); saveSettings(); });
+      $("dark").addEventListener("click", () => { state.settings.dark = !state.settings.dark; $("dark").classList.toggle("on", state.settings.dark); applyTheme(); saveSettings(); });
+      $("mobileMenu").addEventListener("click", () => document.body.classList.toggle("show-mobile-recent"));
+      $("mobileRecent").addEventListener("click", () => document.body.classList.toggle("show-mobile-recent"));
+
+      applyTheme();
+      if (state.settings.model) $("model").value = state.settings.model;
+      if (state.settings.voice) $("voice").classList.add("on");
+      if (state.settings.dark) $("dark").classList.add("on");
+      loadConversations().catch(() => { list.innerHTML = '<div class="error">The conversation service is unavailable. Refresh to try again.</div>'; });
+    </script>
+  </body>
+</html>

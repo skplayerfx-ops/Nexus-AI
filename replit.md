@@ -4,7 +4,7 @@ Nexus-AI is a focused conversation workspace for thinking, planning, and draftin
 
 ## Run & Operate
 
-- `uv run uvicorn fastapi_app:app --host 0.0.0.0 --port $PORT` — run the FastAPI service from `artifacts/api-server`
+- `uv run uvicorn main:app --host 0.0.0.0 --port $PORT` — run the FastAPI service
 - `pnpm --filter @workspace/nexus-ai run dev` — run the web app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
@@ -22,16 +22,17 @@ Nexus-AI is a focused conversation workspace for thinking, planning, and draftin
 
 ## Where things live
 
-- `artifacts/nexus-ai/src/` — React workspace, settings page, and visual theme
-- `artifacts/api-server/fastapi_app.py` — FastAPI routes and in-memory conversation state
+- `main.py` — FastAPI routes and in-memory conversation state
+- `index.html` — standalone frontend UI and browser interactions
+- `requirements.txt` — Python runtime dependencies
 - `lib/api-spec/openapi.yaml` — source of truth for API contracts
-- `lib/api-client-react/src/generated/` — generated React Query client hooks
+- `artifacts/nexus-ai/` — preview configuration for the root `index.html`
 
 ## Architecture decisions
 
 - The FastAPI service keeps a small in-memory seed dataset for the first build so the workspace is useful immediately without a database setup.
-- The frontend uses generated OpenAPI hooks for all conversation reads and chat mutations.
-- The API service runs from its artifact directory, so the Uvicorn module target is file-local.
+- The browser UI uses the FastAPI routes directly with `fetch`, keeping the user-facing app in one HTML file.
+- The preview server serves the root `index.html`; the FastAPI service remains the source for `/api` routes.
 
 ## Product
 

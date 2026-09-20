@@ -10,19 +10,19 @@ name = "API Server"
 paths = ["/api"]
 
 [services.development]
-run = "uv run uvicorn fastapi_app:app --host 0.0.0.0 --port $PORT"
+run = "uv run uvicorn main:app --app-dir ../.. --host 0.0.0.0 --port $PORT"
 
 [services.production]
 
 [services.production.build]
-args = ["uv", "run", "uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8080"]
+args = ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 
 [services.production.build.env]
 NODE_ENV = "production"
 
 [services.production.run]
 # we don't run through pnpm to make startup faster in production
-args = ["uv", "run", "uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8080"]
+args = ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 
 [services.production.run.env]
 PORT = "8080"
