@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: conversations
+    description: AI conversation operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List conversations
+      description: Returns the user's recent AI conversations
+      responses:
+        "200":
+          description: Conversation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+  /conversations/{conversationId}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a conversation
+      description: Returns a conversation and its messages
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationDetail"
+        "404":
+          description: Conversation not found
+  /chat:
+    post:
+      operationId: sendChatMessage
+      tags: [conversations]
+      summary: Send a chat message
+      description: Adds a user message and returns an assistant response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +90,58 @@ components:
           type: string
       required:
         - status
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        createdAt:
+          type: string
+      required: [id, role, content, createdAt]
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        preview:
+          type: string
+        updatedAt:
+          type: string
+        messageCount:
+          type: integer
+      required: [id, title, preview, updatedAt, messageCount]
+    ConversationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Conversation"
+        - type: object
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: "#/components/schemas/Message"
+          required: [messages]
+    ChatInput:
+      type: object
+      properties:
+        conversationId:
+          type: ["string", "null"]
+        prompt:
+          type: string
+          minLength: 1
+      required: [prompt]
+    ChatResponse:
+      type: object
+      properties:
+        conversation:
+          $ref: "#/components/schemas/ConversationDetail"
+        assistantMessage:
+          $ref: "#/components/schemas/Message"
+      required: [conversation, assistantMessage]
 
