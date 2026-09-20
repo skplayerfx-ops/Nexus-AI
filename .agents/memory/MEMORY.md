@@ -1,1 +1,2 @@
 - [FastAPI service workflow](fastapi-workflow.md) — managed API workflows run from the service directory; use a file-local Uvicorn import target.
+- [FastAPI API verification](fastapi-api-verification.md) — this workspace's TestClient requires httpx2; use the running API workflow for HTTP checks when it is unavailable.

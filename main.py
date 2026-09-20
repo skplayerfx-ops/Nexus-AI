@@ -1,16 +1,85 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 Role = Literal["user", "assistant"]
+DEFAULT_MODEL = "nexus-core"
+
+
+class AIModel(BaseModel):
+    model_name: str
+    display_name: str
+    description: str
+    capabilities: list[str]
+
+
+AVAILABLE_MODELS: dict[str, AIModel] = {
+    "nexus-core": AIModel(
+        model_name="nexus-core",
+        display_name="Nexus Core",
+        description="A balanced model for everyday questions, drafts, and planning.",
+        capabilities=["general", "writing", "planning"],
+    ),
+    "nexus-focus": AIModel(
+        model_name="nexus-focus",
+        display_name="Nexus Focus",
+        description="A concise model for clear decisions, summaries, and next steps.",
+        capabilities=["concise", "analysis", "prioritization"],
+    ),
+    "nexus-explore": AIModel(
+        model_name="nexus-explore",
+        display_name="Nexus Explore",
+        description="A divergent model for brainstorming and comparing possibilities.",
+        capabilities=["brainstorming", "ideation", "alternatives"],
+    ),
+}
+
+MODEL_ALIASES = {
+    "nexus core": "nexus-core",
+    "nexus focus": "nexus-focus",
+    "nexus explore": "nexus-explore",
+}
+
+
+class PromptInput(BaseModel):
+    """Validated input for a chat completion."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    prompt: str = Field(
+        min_length=1,
+        max_length=4000,
+        description="The message to send to the selected model.",
+    )
+    model_name: str = Field(
+        default=DEFAULT_MODEL,
+        min_length=1,
+        max_length=64,
+        description="The model identifier from GET /api/models.",
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("conversationId", "conversation_id"),
+        description="Existing conversation ID, when continuing a conversation.",
+    )
+
+
+# Keep the previous public type name available to callers that imported it.
+ChatInput = PromptInput
+
+
+class ModelsResponse(BaseModel):
+    models: list[AIModel]
+    default_model: str
+
+
 def now() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -42,6 +111,7 @@ class ChatInput(BaseModel):
 class ChatResponse(BaseModel):
     conversation: ConversationDetail
     assistantMessage: Message
+    model_name: str
 
 
 def message(role: Role, content: str) -> Message:
@@ -104,6 +174,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+api_router = APIRouter(prefix="/api", tags=["Nexus AI"])
+
 
 @app.get("/", include_in_schema=False)
 @app.get("/api/", include_in_schema=False)
@@ -117,7 +189,15 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/api/conversations", response_model=list[Conversation])
+@api_router.get("/models", response_model=ModelsResponse)
+def list_models() -> ModelsResponse:
+    return ModelsResponse(
+        models=list(AVAILABLE_MODELS.values()),
+        default_model=DEFAULT_MODEL,
+    )
+
+
+@api_router.get("/conversations", response_model=list[Conversation])
 def list_conversations() -> list[Conversation]:
     return sorted(
         conversations.values(),
@@ -126,7 +206,7 @@ def list_conversations() -> list[Conversation]:
     )
 
 
-@app.get("/api/conversations/{conversation_id}", response_model=ConversationDetail)
+@api_router.get("/conversations/{conversation_id}", response_model=ConversationDetail)
 def get_conversation(conversation_id: str) -> ConversationDetail:
     item = conversations.get(conversation_id)
     if item is None:
@@ -134,9 +214,29 @@ def get_conversation(conversation_id: str) -> ConversationDetail:
     return item
 
 
-def assistant_reply(prompt: str) -> str:
+def resolve_model_name(model_name: str) -> str:
+    normalized = model_name.strip().lower().replace("_", "-")
+    normalized = MODEL_ALIASES.get(normalized, normalized)
+    if normalized not in AVAILABLE_MODELS:
+        supported = ", ".join(AVAILABLE_MODELS)
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown model_name '{model_name}'. Choose one of: {supported}.",
+        )
+    return normalized
+
+
+def assistant_reply(prompt: str, model_name: str = DEFAULT_MODEL) -> str:
     text = " ".join(prompt.strip().split())
     lower = text.lower()
+    if model_name == "nexus-focus":
+        if "plan" in lower or "priorit" in lower:
+            return "Choose the most important outcome, define one next action, and schedule it. Defer everything that does not support that outcome."
+        return f"First pass on “{text}”: define the outcome, choose the smallest next action, and decide how you will measure progress."
+    if model_name == "nexus-explore":
+        if "idea" in lower or "brainstorm" in lower:
+            return "Generate three safe options, one ambitious option, and one deliberately simple option. Compare them by effort, upside, and what you would learn."
+        return f"Explore “{text}” from three angles: the obvious approach, a more ambitious alternative, and the simplest useful experiment."
     if "plan" in lower or "priorit" in lower:
         return "Start by naming the outcome that matters most. Then reduce the next step until it can be completed in one sitting. A short, visible sequence is usually more useful than a perfect plan."
     if "write" in lower or "draft" in lower:
@@ -146,13 +246,14 @@ def assistant_reply(prompt: str) -> str:
     return f"Here’s a useful first pass on “{text}”: make the next action concrete, keep the scope narrow, and decide what evidence would tell you it is working. I can help you turn that into a plan, draft, or checklist."
 
 
-@app.post("/api/chat", response_model=ChatResponse)
-def chat(payload: ChatInput) -> ChatResponse:
+@api_router.post("/chat", response_model=ChatResponse)
+def chat(payload: PromptInput) -> ChatResponse:
     prompt = payload.prompt.strip()
     if not prompt:
         raise HTTPException(status_code=422, detail="Prompt cannot be empty")
 
-    conversation_id = payload.conversationId or str(uuid4())
+    model_name = resolve_model_name(payload.model_name)
+    conversation_id = payload.conversation_id or str(uuid4())
     item = conversations.get(conversation_id)
     if item is None:
         item = conversation(conversation_id, "New conversation", [])
@@ -161,7 +262,7 @@ def chat(payload: ChatInput) -> ChatResponse:
     item.messages.extend(
         [
             message("user", prompt),
-            message("assistant", assistant_reply(prompt)),
+            message("assistant", assistant_reply(prompt, model_name)),
         ]
     )
     if item.title == "New conversation":
@@ -170,4 +271,11 @@ def chat(payload: ChatInput) -> ChatResponse:
     item.updatedAt = item.messages[-1].createdAt
     item.messageCount = len(item.messages)
 
-    return ChatResponse(conversation=item, assistantMessage=item.messages[-1])
+    return ChatResponse(
+        conversation=item,
+        assistantMessage=item.messages[-1],
+        model_name=model_name,
+    )
+
+
+app.include_router(api_router)
