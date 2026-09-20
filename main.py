@@ -7,14 +7,10 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 
 Role = Literal["user", "assistant"]
-ROOT = Path(__file__).parent
-
-
 def now() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -110,8 +106,10 @@ app.add_middleware(
 
 
 @app.get("/", include_in_schema=False)
-def frontend() -> FileResponse:
-    return FileResponse(ROOT / "index.html")
+@app.get("/api/", include_in_schema=False)
+@app.get("/api", include_in_schema=False)
+def hello_world() -> dict[str, str]:
+    return {"message": "Hello, World!"}
 
 
 @app.get("/api/healthz")
