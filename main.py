@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import json
+import os
+import urllib.error
+import urllib.request
 from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
@@ -103,15 +108,11 @@ class ConversationDetail(Conversation):
     messages: list[Message]
 
 
-class ChatInput(BaseModel):
-    conversationId: str | None = None
-    prompt: str = Field(min_length=1, max_length=4000)
-
-
 class ChatResponse(BaseModel):
     conversation: ConversationDetail
     assistantMessage: Message
     model_name: str
+    provider: str
 
 
 def message(role: Role, content: str) -> Message:
@@ -226,28 +227,185 @@ def resolve_model_name(model_name: str) -> str:
     return normalized
 
 
-def assistant_reply(prompt: str, model_name: str = DEFAULT_MODEL) -> str:
-    text = " ".join(prompt.strip().split())
-    lower = text.lower()
-    if model_name == "nexus-focus":
-        if "plan" in lower or "priorit" in lower:
-            return "Choose the most important outcome, define one next action, and schedule it. Defer everything that does not support that outcome."
-        return f"First pass on “{text}”: define the outcome, choose the smallest next action, and decide how you will measure progress."
-    if model_name == "nexus-explore":
-        if "idea" in lower or "brainstorm" in lower:
-            return "Generate three safe options, one ambitious option, and one deliberately simple option. Compare them by effort, upside, and what you would learn."
-        return f"Explore “{text}” from three angles: the obvious approach, a more ambitious alternative, and the simplest useful experiment."
-    if "plan" in lower or "priorit" in lower:
-        return "Start by naming the outcome that matters most. Then reduce the next step until it can be completed in one sitting. A short, visible sequence is usually more useful than a perfect plan."
-    if "write" in lower or "draft" in lower:
-        return "Give me the audience, the point you want them to remember, and the tone you want to land. I can turn that into a first draft, then help you tighten it."
-    if "idea" in lower or "brainstorm" in lower:
-        return "Let’s widen the field before we judge it. List the obvious options first, then add one that feels too ambitious and one that feels almost too simple. The contrast usually reveals the interesting direction."
-    return f"Here’s a useful first pass on “{text}”: make the next action concrete, keep the scope narrow, and decide what evidence would tell you it is working. I can help you turn that into a plan, draft, or checklist."
+class AIProviderError(Exception):
+    """An expected failure while communicating with the configured AI provider."""
+
+
+OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
+GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
+PROVIDER_TIMEOUT_SECONDS = 45
+
+PROVIDER_MODELS: dict[str, dict[str, str]] = {
+    "openrouter": {
+        "nexus-core": "openai/gpt-4o-mini",
+        "nexus-focus": "meta-llama/llama-3.1-8b-instruct",
+        "nexus-explore": "mistralai/mistral-small-3.1-24b-instruct",
+    },
+    "groq": {
+        "nexus-core": "llama-3.3-70b-versatile",
+        "nexus-focus": "llama-3.1-8b-instant",
+        "nexus-explore": "llama-3.3-70b-versatile",
+    },
+}
+
+
+def provider_configuration() -> tuple[str, str, str]:
+    """Return provider name, endpoint, and key without ever logging the key."""
+
+    preferred = os.getenv("AI_PROVIDER", "").strip().lower()
+    keys = {
+        "openrouter": os.getenv("OPENROUTER_API_KEY", "").strip(),
+        "groq": os.getenv("GROQ_API_KEY", "").strip(),
+    }
+    endpoints = {
+        "openrouter": OPENROUTER_ENDPOINT,
+        "groq": GROQ_ENDPOINT,
+    }
+
+    if preferred and preferred not in keys:
+        raise AIProviderError("AI_PROVIDER must be either 'openrouter' or 'groq'.")
+    if preferred:
+        if not keys[preferred]:
+            raise AIProviderError(
+                f"AI_PROVIDER is set to '{preferred}', but its API key is not configured."
+            )
+        return preferred, endpoints[preferred], keys[preferred]
+
+    for provider in ("openrouter", "groq"):
+        if keys[provider]:
+            return provider, endpoints[provider], keys[provider]
+
+    raise AIProviderError(
+        "No AI provider is configured. Add OPENROUTER_API_KEY or GROQ_API_KEY "
+        "to the project secrets."
+    )
+
+
+def provider_model_name(provider: str, model_name: str) -> str:
+    try:
+        return PROVIDER_MODELS[provider][model_name]
+    except KeyError as error:
+        raise AIProviderError(
+            f"Model '{model_name}' is not configured for provider '{provider}'."
+        ) from error
+
+
+def system_instruction(model_name: str) -> str:
+    instructions = {
+        "nexus-core": "Be helpful, clear, and practical. Give a balanced answer with concrete next steps.",
+        "nexus-focus": "Be concise and decisive. Prioritize the most important answer and give a short action plan.",
+        "nexus-explore": "Think divergently. Offer useful alternatives, tradeoffs, and one simple experiment to learn more.",
+    }
+    return instructions[model_name]
+
+
+def extract_provider_content(payload: object) -> str:
+    if not isinstance(payload, dict):
+        raise AIProviderError("The AI provider returned an invalid response.")
+
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise AIProviderError("The AI provider returned no response choices.")
+
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        raise AIProviderError("The AI provider returned an invalid response choice.")
+    message_payload = first_choice.get("message")
+    if not isinstance(message_payload, dict):
+        raise AIProviderError("The AI provider returned no assistant message.")
+
+    content = message_payload.get("content")
+    if isinstance(content, str) and content.strip():
+        return content.strip()
+    if isinstance(content, list):
+        text_parts = [
+            part.get("text", "")
+            for part in content
+            if isinstance(part, dict) and isinstance(part.get("text"), str)
+        ]
+        combined = "".join(text_parts).strip()
+        if combined:
+            return combined
+
+    raise AIProviderError("The AI provider returned an empty assistant message.")
+
+
+def post_provider_request(
+    endpoint: str,
+    api_key: str,
+    provider: str,
+    provider_model: str,
+    messages: list[dict[str, str]],
+) -> str:
+    body = json.dumps(
+        {
+            "model": provider_model,
+            "messages": messages,
+            "temperature": 0.7,
+        }
+    ).encode("utf-8")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    if provider == "openrouter":
+        headers["X-Title"] = "Nexus AI"
+
+    request = urllib.request.Request(
+        endpoint,
+        data=body,
+        headers=headers,
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=PROVIDER_TIMEOUT_SECONDS) as response:
+            raw_response = response.read(2_000_000)
+    except urllib.error.HTTPError as error:
+        # Do not return the provider body: it may contain sensitive request details.
+        raise AIProviderError(
+            f"{provider.title()} rejected the request with HTTP {error.code}."
+        ) from error
+    except (urllib.error.URLError, TimeoutError, OSError) as error:
+        raise AIProviderError(
+            f"{provider.title()} could not be reached. Try again shortly."
+        ) from error
+
+    try:
+        response_payload = json.loads(raw_response.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise AIProviderError(
+            f"{provider.title()} returned an invalid JSON response."
+        ) from error
+    return extract_provider_content(response_payload)
+
+
+async def live_model_response(
+    prompt: str,
+    model_name: str,
+    history: list[Message],
+) -> tuple[str, str]:
+    provider, endpoint, api_key = provider_configuration()
+    provider_model = provider_model_name(provider, model_name)
+    messages = [{"role": "system", "content": system_instruction(model_name)}]
+    messages.extend(
+        {"role": item.role, "content": item.content}
+        for item in history[-12:]
+    )
+    messages.append({"role": "user", "content": prompt})
+    response = await asyncio.to_thread(
+        post_provider_request,
+        endpoint,
+        api_key,
+        provider,
+        provider_model,
+        messages,
+    )
+    return response, provider
 
 
 @api_router.post("/chat", response_model=ChatResponse)
-def chat(payload: PromptInput) -> ChatResponse:
+async def chat(payload: PromptInput) -> ChatResponse:
     prompt = payload.prompt.strip()
     if not prompt:
         raise HTTPException(status_code=422, detail="Prompt cannot be empty")
@@ -259,10 +417,21 @@ def chat(payload: PromptInput) -> ChatResponse:
         item = conversation(conversation_id, "New conversation", [])
         conversations[conversation_id] = item
 
+    try:
+        assistant_content, provider = await live_model_response(
+            prompt,
+            model_name,
+            item.messages,
+        )
+    except AIProviderError as error:
+        message_text = str(error)
+        status_code = 503 if "configured" in message_text else 502
+        raise HTTPException(status_code=status_code, detail=message_text) from error
+
     item.messages.extend(
         [
             message("user", prompt),
-            message("assistant", assistant_reply(prompt, model_name)),
+            message("assistant", assistant_content),
         ]
     )
     if item.title == "New conversation":
@@ -275,6 +444,7 @@ def chat(payload: PromptInput) -> ChatResponse:
         conversation=item,
         assistantMessage=item.messages[-1],
         model_name=model_name,
+        provider=provider,
     )
 
 
