@@ -5,11 +5,22 @@ dist
 tmp
 out-tsc
 *.tsbuildinfo
+*.log
+.vite/
+artifacts/**/dist/
 .expo
 .expo-shared
 
 # dependencies
 node_modules
+.pythonlibs/
+.venv/
+venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
 
 # IDEs and editors
 /.idea
@@ -40,6 +51,18 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+credentials/
+secrets/
 
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
