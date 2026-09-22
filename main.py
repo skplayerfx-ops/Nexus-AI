@@ -1,14 +1,170 @@
 import os
-import urllib.request
 import urllib.parse
-import json
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 
-app = FastAPI(title="Nexus AI Master Engine", version="10.0.0")
+# Optional SDK Imports (In case API keys are present)
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+try:
+    import anthropic
+except ImportError:
+    anthropic = None
+
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
+try:
+    import httpx
+except ImportError:
+    httpx = None
+
+
+# ==========================================
+# 1. INDIVIDUAL AI ENGINE MODULES
+# ==========================================
+
+class OpenAIEngine:
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        if OpenAI and self.api_key:
+            self.client = OpenAI(api_key=self.api_key)
+        else:
+            self.client = None
+
+    def query(self, prompt: str, system_prompt: str) -> str:
+        if not self.client:
+            return "OpenAI API Key not configured."
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"OpenAI Error: {str(e)}"
+
+
+class ClaudeEngine:
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        if anthropic and self.api_key:
+            self.client = anthropic.Anthropic(api_key=self.api_key)
+        else:
+            self.client = None
+
+    def query(self, prompt: str, system_prompt: str) -> str:
+        if not self.client:
+            return "Anthropic API Key not configured."
+        try:
+            response = self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1500,
+                system=system_prompt,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text
+        except Exception as e:
+            return f"Claude Error: {str(e)}"
+
+
+class GeminiEngine:
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        if genai and self.api_key:
+            genai.configure(api_key=self.api_key)
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
+        else:
+            self.model = None
+
+    def query(self, prompt: str, system_prompt: str) -> str:
+        if not self.model:
+            return "Gemini API Key not configured."
+        try:
+            full_prompt = f"{system_prompt}\n\nUser: {prompt}" if system_prompt else prompt
+            response = self.model.generate_content(full_prompt)
+            return response.text
+        except Exception as e:
+            return f"Gemini Error: {str(e)}"
+
+
+class DeepSeekEngine:
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+        if OpenAI and self.api_key:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url="https://api.deepseek.com"
+            )
+        else:
+            self.client = None
+
+    def query(self, prompt: str, system_prompt: str) -> str:
+        if not self.client:
+            return "DeepSeek API Key not configured."
+        try:
+            response = self.client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"DeepSeek Error: {str(e)}"
+
+
+class LlamaEngine:
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        if OpenAI and self.api_key:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url="https://api.groq.com/openai/v1"
+            )
+        else:
+            self.client = None
+
+    def query(self, prompt: str, system_prompt: str) -> str:
+        if not self.client:
+            return "Llama/Groq API Key not configured."
+        try:
+            response = self.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Llama Error: {str(e)}"
+
+
+class ImageEngine:
+    @staticmethod
+    def generate_image_url(prompt: str) -> str:
+        encoded_prompt = urllib.parse.quote(prompt.strip())
+        return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&seed=42&nologo=true&model=flux"
+
+
+# ==========================================
+# 2. FASTAPI MASTER ROUTER
+# ==========================================
+
+app = FastAPI(title="Nexus Master Combined AI System")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,70 +174,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BINANCE_PAY_ID = "1243962107"
-
-SYSTEM_PROMPT = """You are Nexus AI, created by Mr. Sadam Hussain son of Jehanzeb.
-Always reply in the user's language (Urdu, Pashto, English, Roman Urdu).
-Only mention your creator Mr. Sadam Hussain son of Jehanzeb when asked explicitly about who created/made you."""
-
 class ChatRequest(BaseModel):
-    message: Optional[str] = ""
+    message: str
     model: Optional[str] = "gpt-4o"
-    image_data: Optional[str] = None
-
-class PaymentRequest(BaseModel):
-    user_id: str
-    package_id: str
-    amount: float
-
-@app.get("/", response_class=HTMLResponse)
-async def serve_dashboard():
-    try:
-        with open("index.html", "r", encoding="utf-8") as f:
-            return f.read()
-    except Exception:
-        return "<h1>Nexus AI Engine Active</h1>"
+    system_prompt: Optional[str] = "You are Nexus AI Assistant."
 
 @app.post("/api/chat")
-async def chat_handler(payload: ChatRequest):
-    user_msg = payload.message.strip() if payload.message else ""
-    selected_model = payload.model.lower() if payload.model else "gpt-4o"
+async def combined_chat_router(req: ChatRequest):
+    msg = req.message.strip()
+    selected_model = req.model.lower() if req.model else "gpt-4o"
 
-    # Identity Logic
-    creator_keywords = ["kisne banaya", "who made", "who created", "creator", "cha jor kare", "developer"]
-    if any(kw in user_msg.lower() for kw in creator_keywords):
+    # Image Check
+    image_keywords = ["generate image", "make photo", "edit image", "draw", "picture", "logo", "tasveer"]
+    if any(k in msg.lower() for k in image_keywords):
         return {
-            "reply": "Main Nexus AI hu, aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.",
-            "image_url": None
+            "type": "image",
+            "reply": "Image generated successfully:",
+            "image_url": ImageEngine.generate_image_url(msg)
         }
 
-    # Image Generation / Editing Route
-    image_triggers = ["generate image", "make photo", "edit image", "picture", "tasveer", "draw", "logo", "liko", "write"]
-    if any(trig in user_msg.lower() for trig in image_triggers):
-        encoded_prompt = urllib.parse.quote(user_msg)
-        img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-        return {
-            "reply": "Aapki image request process ho kar taiyar hai:",
-            "image_url": img_url
-        }
+    # Model Router
+    if "gpt" in selected_model or "openai" in selected_model:
+        res = OpenAIEngine().query(msg, req.system_prompt)
+    elif "claude" in selected_model or "anthropic" in selected_model:
+        res = ClaudeEngine().query(msg, req.system_prompt)
+    elif "gemini" in selected_model:
+        res = GeminiEngine().query(msg, req.system_prompt)
+    elif "deepseek" in selected_model:
+        res = DeepSeekEngine().query(msg, req.system_prompt)
+    elif "llama" in selected_model:
+        res = LlamaEngine().query(msg, req.system_prompt)
+    else:
+        res = OpenAIEngine().query(msg, req.system_prompt)
 
-    # Text Chat Route via Pollinations
-    encoded_p = urllib.parse.quote(user_msg)
-    encoded_sys = urllib.parse.quote(SYSTEM_PROMPT)
-    url = f"https://text.pollinations.ai/{encoded_p}?model={selected_model}&system={encoded_sys}"
-    
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=20) as response:
-            reply_text = response.read().decode("utf-8").strip()
-            return {"reply": reply_text, "image_url": None}
-    except Exception:
-        return {"reply": "Connection busy, please try sending message again.", "image_url": None}
-
-@app.post("/api/payment/process")
-async def process_payment(payment: PaymentRequest):
-    return JSONResponse({
-        "status": "success",
-        "message": f"Package {payment.package_id.upper()} activated successfully!",
-        "binance_pay_id": BINANCE_PAY_ID
-    })
+    return {
+        "type": "text",
+        "reply": res,
+        "image_url": None
+    }
