@@ -1,9 +1,3 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-
-app = FastAPI()
-
-html_content = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +15,7 @@ html_content = """
 <body class="flex h-screen overflow-hidden">
 
     <!-- Sidebar Navigation -->
-    <aside class="w-64 sidebar flex flex-col justify-between p-4">
+    <aside class="w-64 sidebar flex flex-col justify-between p-4 flex-shrink-0">
         <div>
             <!-- Brand Logo Header -->
             <div class="flex items-center space-x-3 mb-8 px-2">
@@ -137,8 +131,3 @@ html_content = """
     </script>
 </body>
 </html>
-"""
-
-@app.get("/", response_class=HTMLResponse)
-def read_root():
-    return html_content
