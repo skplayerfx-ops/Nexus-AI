@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nexus AI — Master Engine</title>
+    <title>Nexus AI — Complete AI Network</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #080c14; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .glass-panel { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .pulse-anim { animation: pulse 1.6s infinite ease-in-out; }
+        body { background-color: #080c14; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .pulse-anim { animation: pulse 1.5s infinite ease-in-out; }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
     </style>
 </head>
 <body class="flex flex-col md:flex-row min-h-screen overflow-x-hidden">
 
-    <!-- Mobile Top Header -->
+    <!-- Mobile Header -->
     <header class="md:hidden glass-panel p-3 flex items-center justify-between sticky top-0 z-30">
         <div class="flex items-center space-x-2">
             <div class="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center font-bold text-black text-sm">NX</div>
-            <span class="font-bold text-sm text-white tracking-wide">NEXUS AI</span>
+            <span class="font-bold text-sm text-white">NEXUS AI</span>
         </div>
         <button onclick="openPackagesModal()" class="bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-extrabold text-[11px] px-3 py-1.5 rounded-lg shadow">
             💎 Pro Packages
@@ -38,9 +38,9 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">🤖 Select AI Model</label>
+                    <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">🤖 Select AI Engine</label>
                     <select id="model-select" class="w-full bg-slate-900 border border-cyan-500/30 text-cyan-300 text-xs rounded-xl p-3 focus:outline-none">
-                        <option value="nexus-auto" selected>✨ All-In-One (Smart Auto Selector)</option>
+                        <option value="nexus-auto" selected>✨ Nexus AI (Smart Auto All-In-One)</option>
                         <option value="gpt-4o">⚡ OpenAI ChatGPT (GPT-4o)</option>
                         <option value="claude-3-5">🔮 Anthropic Claude 3.5 Sonnet</option>
                         <option value="gemini-2">♊ Google Gemini 2.0</option>
@@ -57,17 +57,17 @@
         </div>
 
         <div class="text-center text-[10px] text-gray-500 border-t border-slate-800 pt-3">
-            Binance Pay Merchant ID: 1243962107
+            Binance Pay ID: 1243962107
         </div>
     </aside>
 
-    <!-- Main Chat Workspace -->
+    <!-- Main Workspace -->
     <main class="flex-1 flex flex-col p-3 md:p-6 justify-between h-[calc(100vh-55px)] md:h-screen">
         
         <div id="chat-box" class="flex-1 glass-panel rounded-2xl p-4 overflow-y-auto space-y-3 mb-3">
             <div class="bg-slate-900/90 p-3.5 rounded-2xl max-w-xl text-xs border border-slate-800 leading-relaxed">
                 <strong class="text-cyan-400 block mb-1">Nexus AI Engine</strong>
-                Welcome to Nexus AI! How can I assist you today?
+                Welcome to Nexus AI! Main aap ki kis tarah madad kar sakta hu?
             </div>
         </div>
 
@@ -79,7 +79,7 @@
             <button onclick="clearImage()" class="text-red-400 font-bold text-xs px-2">✕ Remove</button>
         </div>
 
-        <!-- Input Control Panel -->
+        <!-- Input Box -->
         <div class="glass-panel p-2 rounded-2xl flex items-center gap-2">
             <label class="p-2 text-gray-400 hover:text-cyan-400 cursor-pointer">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
@@ -90,7 +90,7 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
             </button>
 
-            <input type="text" id="user-input" placeholder="Type message or 'edit this image'..." class="flex-1 bg-transparent text-white text-xs px-2 py-2 focus:outline-none" onkeypress="if(event.key==='Enter') sendMsg()">
+            <input type="text" id="user-input" placeholder="Type message or 'edit image'..." class="flex-1 bg-transparent text-white text-xs px-2 py-2 focus:outline-none" onkeypress="if(event.key==='Enter') sendMsg()">
 
             <button onclick="sendMsg()" class="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-5 py-2.5 rounded-xl shadow transition">
                 Send
@@ -98,7 +98,7 @@
         </div>
     </main>
 
-    <!-- Real-time Voice Modal -->
+    <!-- Voice Live Conversation Modal -->
     <div id="voice-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden z-50 flex flex-col items-center justify-between p-6">
         <div class="w-full flex justify-between items-center">
             <span class="text-xs font-bold text-cyan-400">NEXUS LIVE VOICE MODE</span>
@@ -118,7 +118,7 @@
         </div>
     </div>
 
-    <!-- Packages & Payment Modal -->
+    <!-- Pro Packages Modal -->
     <div id="packages-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-amber-500/40 w-full max-w-md rounded-2xl p-5 text-white space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -199,7 +199,7 @@
         function startListening() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
-                alert("Speech recognition not supported in this browser.");
+                alert("Voice feature is not supported in this browser.");
                 return;
             }
             recognition = new SpeechRec();
@@ -228,7 +228,7 @@
             const res = await fetch('/api/payment/process', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: "user_123", package_id: packageId, amount: amount, payment_method: "binance" })
+                body: JSON.stringify({ user_id: "user_123", package_id: packageId, amount: amount })
             });
             const data = await res.json();
             alert(data.message + "\nBinance Pay ID: " + data.binance_pay_id);
