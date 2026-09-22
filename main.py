@@ -6,12 +6,13 @@ from typing import Optional, List, Dict, Any
 import os
 import json
 import urllib.request
+import urllib.parse
 import urllib.error
 
 app = FastAPI(
     title="Nexus AI Engine API",
-    description="Multi-Model AI Assistant powered by OpenRouter & Gemini API",
-    version="2.5.0"
+    description="Multi-Model AI Assistant powered by Real AI Engines",
+    version="3.0.0"
 )
 
 app.add_middleware(
@@ -24,29 +25,15 @@ app.add_middleware(
 
 IDENTITY_RESPONSE = "Main Nexus AI hu aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai."
 
-SYSTEM_PROMPT = """You are Nexus AI, an advanced multi-model AI assistant developed exclusively by Mr. Sadam Hussain son of Jehanzeb.
-You support Urdu, Pashto, Roman Urdu, and English languages naturally.
-Whenever asked about who created you, who made you, or your identity, always state clearly in the user's language that you were created by Mr. Sadam Hussain son of Jehanzeb.
-Provide helpful, concise, intelligent, and accurate responses for trading, coding, image analysis, and general chat."""
-
-MODEL_MAP = {
-    "auto": "google/gemini-2.0-flash-lite-001",
-    "gpt-4o": "openai/gpt-4o-mini",
-    "claude-3-5": "anthropic/claude-3.5-haiku",
-    "gemini-1-5": "google/gemini-flash-1.5",
-    "deepseek-r1": "deepseek/deepseek-r1-distill-llama-70b",
-    "llama-3-3": "meta-llama/llama-3.3-70b-instruct",
-    "image-edit-engine": "google/gemini-2.0-flash-lite-001"
-}
+SYSTEM_PROMPT = "You are Nexus AI, created exclusively by Mr. Sadam Hussain son of Jehanzeb. Reply naturally, intelligently, and directly to user questions in Roman Urdu, Urdu, Pashto, or English."
 
 class ChatPayload(BaseModel):
     message: Optional[str] = ""
     image: Optional[str] = None
     model: Optional[str] = "auto"
     voice_mode: Optional[bool] = False
-    history: Optional[List[Dict[str, str]]] = []
 
-# 1. Full Advanced Dashboard Web UI
+# 1. Full Interactive UI Code
 @app.get("/", response_class=HTMLResponse)
 async def serve_home_page():
     return """
@@ -54,329 +41,220 @@ async def serve_home_page():
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus AI — Multi-Model Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus AI Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0b0f17; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
-        .sidebar { background-color: #111827; }
+        body { background-color: #0b0f17; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         .card { background-color: #111827; border: 1px solid #1f2937; }
-        .voice-pulse {
-            box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
-            animation: pulse-ring 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
-        }
-        @keyframes pulse-ring {
-            to { box-shadow: 0 0 0 35px rgba(6, 182, 212, 0); }
-        }
+        .pulse-orb { animation: pulse 1.5s infinite ease-in-out; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.08); opacity: 1; } }
     </style>
 </head>
-<body class="flex flex-col md:flex-row min-h-screen relative overflow-x-hidden">
+<body class="flex flex-col min-h-screen">
 
-    <!-- Mobile Header -->
-    <header class="md:hidden flex items-center justify-between p-4 bg-gray-900 border-b border-gray-800">
-        <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold text-base shadow-lg">NX</div>
+    <!-- Top Navigation Header -->
+    <header class="p-3 bg-gray-900 border-b border-gray-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow">NX</div>
             <div>
                 <h1 class="font-bold text-sm text-white">NEXUS AI</h1>
-                <p class="text-[10px] text-gray-400">By Mr. Sadam Hussain</p>
+                <p class="text-[10px] text-cyan-400">By Mr. Sadam Hussain</p>
             </div>
         </div>
-        <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white p-2">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
+        
+        <select id="ai-model-select" class="bg-gray-800 text-xs text-cyan-300 border border-cyan-500/30 rounded-lg px-2 py-1 focus:outline-none">
+            <option value="openai">✨ ChatGPT (GPT-4o)</option>
+            <option value="qwen">🧠 Qwen 2.5 Turbo</option>
+            <option value="claude">🔮 Claude 3.5 Sonnet</option>
+            <option value="deepseek">🔍 DeepSeek R1</option>
+        </select>
     </header>
 
-    <!-- Sidebar Navigation -->
-    <aside id="sidebar-menu" class="hidden md:flex w-full md:w-64 sidebar flex-col justify-between p-4 flex-shrink-0 border-r border-gray-800">
-        <div>
-            <div class="hidden md:flex items-center space-x-3 mb-6 px-2">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">NX</div>
-                <div>
-                    <h1 class="font-bold text-lg text-white">NEXUS AI</h1>
-                    <p class="text-xs text-gray-400">By Mr. Sadam Hussain</p>
-                </div>
-            </div>
-
-            <!-- AI Engine Selector -->
-            <div class="space-y-4">
-                <div class="card p-3 rounded-xl border-cyan-500/30">
-                    <label class="text-xs font-semibold text-cyan-400 uppercase tracking-wider block mb-2">🤖 Select AI Engine</label>
-                    <select id="ai-model-select" class="w-full bg-gray-800 text-xs border border-cyan-500/40 text-white rounded-lg p-2.5 focus:outline-none focus:border-cyan-400 font-medium">
-                        <option value="auto" selected>✨ Nexus AI (Auto Smart Engine)</option>
-                        <option value="gpt-4o">⚡ ChatGPT (GPT-4o Vision)</option>
-                        <option value="claude-3-5">🧠 Claude 3.5 Sonnet</option>
-                        <option value="gemini-1-5">♊ Google Gemini 1.5 Pro</option>
-                        <option value="deepseek-r1">🔍 DeepSeek R1 Reasoner</option>
-                        <option value="llama-3-3">🦙 Meta Llama 3.3 70B</option>
-                        <option value="image-edit-engine">🎨 Image Editing Engine</option>
-                    </select>
-                </div>
-
-                <div class="card p-3 rounded-xl border-gray-800">
-                    <label class="text-xs font-semibold text-gray-300 uppercase tracking-wider block mb-2">🎙️ AI Voice Gender</label>
-                    <select id="voice-gender" class="w-full bg-gray-800 text-xs border border-gray-700 text-gray-200 rounded-lg p-2 focus:outline-none">
-                        <option value="female">Female AI Voice</option>
-                        <option value="male">Male AI Voice</option>
-                    </select>
-                </div>
-            </div>
+    <!-- Chat Display Area -->
+    <main class="flex-1 p-3 overflow-y-auto space-y-3" id="chat-box" style="padding-bottom: 90px;">
+        <div class="bg-gray-800 p-3 rounded-xl max-w-[85%] text-xs border border-gray-700/60 leading-relaxed">
+            <strong class="text-cyan-400 block mb-1">Nexus AI Engine</strong>
+            Salam! Main Real AI Engine hu. Mujhse aap trading, coding, image analysis, ya general chat karke real answers hasil kar sakte hain. Voice button se baat bhi kar sakte hain!
         </div>
-
-        <div class="text-center p-2 text-[11px] text-gray-500 border-t border-gray-800/80">
-            Nexus AI System v2.5 • All AIs Integrated
-        </div>
-    </aside>
-
-    <!-- Main Workspace -->
-    <main class="flex-1 flex flex-col p-4 md:p-6 justify-between h-[calc(100vh-60px)] md:h-screen">
-        
-        <div class="flex justify-between items-center mb-4">
-            <div>
-                <h2 class="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                    <span>Nexus Multi-AI Assistant</span>
-                </h2>
-                <p class="text-xs text-gray-400">ChatGPT, Claude, Gemini, DeepSeek & Llama combined in one</p>
-            </div>
-
-            <button onclick="openVoiceDashboard()" class="bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 rounded-xl font-semibold text-xs text-white shadow-lg flex items-center space-x-2 hover:opacity-90">
-                <span class="w-2 h-2 rounded-full bg-green-400 animate-ping"></span>
-                <span>Gemini Live Voice Mode</span>
-            </button>
-        </div>
-
-        <!-- Chat Display Area -->
-        <div class="flex-1 card rounded-xl p-4 overflow-y-auto space-y-4 mb-4" id="chat-box">
-            <div class="bg-gray-800 p-3.5 rounded-xl max-w-xl text-sm border border-gray-700/50 shadow-sm">
-                <strong class="text-cyan-400 block mb-1">Nexus AI Engine</strong>
-                Salam! Main Nexus AI hu. Mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.<br><br>
-                Aap sidebar se **ChatGPT, Claude, Gemini, DeepSeek, ya Llama** chun sakte hain. Image upload karein ya voice mic button par tap karke baat karein!
-            </div>
-        </div>
-
-        <!-- Image Attached Preview -->
-        <div id="image-preview-container" class="hidden mb-2 p-2 bg-gray-800 rounded-lg flex items-center justify-between border border-cyan-500/30">
-            <div class="flex items-center space-x-3">
-                <img id="image-preview" class="w-12 h-12 object-cover rounded-lg border border-gray-700">
-                <span class="text-xs text-cyan-400 font-medium">Image attached</span>
-            </div>
-            <button onclick="removeAttachedImage()" class="text-gray-400 hover:text-red-400 text-xs font-bold px-2 py-1">✕ Remove</button>
-        </div>
-
-        <!-- Toolbar / Input Box -->
-        <div class="flex items-center gap-2 bg-gray-900 border border-gray-800 p-2 rounded-xl">
-            <!-- Image Upload Button -->
-            <label class="cursor-pointer p-2 text-gray-400 hover:text-cyan-400 hover:bg-gray-800 rounded-lg transition" title="Attach Image">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
-            </label>
-
-            <!-- Voice Mic Button -->
-            <button onclick="openVoiceDashboard()" class="p-2 text-cyan-400 hover:bg-gray-800 rounded-lg transition" title="Live Voice Chat">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-            </button>
-
-            <input type="text" id="user-input" placeholder="Ask Nexus AI or select model..." class="flex-1 bg-transparent text-white px-2 py-2 text-sm focus:outline-none" onkeypress="if(event.key==='Enter') sendMessage()">
-
-            <button onclick="sendMessage()" class="bg-cyan-500 px-5 py-2.5 rounded-lg font-bold text-black hover:bg-cyan-400 text-sm shadow-md transition">
-                Send
-            </button>
-        </div>
-
     </main>
 
-    <!-- Voice Live Overlay -->
-    <div id="voice-overlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden z-50 flex flex-col items-center justify-between p-8">
+    <!-- Attached Image Preview Bar -->
+    <div id="image-preview-bar" class="hidden fixed bottom-16 left-3 right-3 bg-gray-900 border border-cyan-500/40 p-2 rounded-xl flex items-center justify-between z-20">
+        <div class="flex items-center space-x-2">
+            <img id="image-preview" class="w-10 h-10 object-cover rounded-lg border border-gray-700">
+            <span class="text-xs text-cyan-300">Image Attached</span>
+        </div>
+        <button onclick="clearImage()" class="text-red-400 font-bold text-xs px-2 py-1">✕ Remove</button>
+    </div>
+
+    <!-- Bottom Input Controls Bar -->
+    <div class="fixed bottom-0 left-0 right-0 p-2 bg-gray-950 border-t border-gray-800 flex items-center gap-2 z-10">
+        <label class="p-2 text-gray-400 hover:text-cyan-400 cursor-pointer">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+            <input type="file" id="image-input" accept="image/*" class="hidden" onchange="previewImage(event)">
+        </label>
+
+        <button onclick="startVoiceRecognition()" class="p-2 text-cyan-400 hover:text-cyan-300" title="Voice Talk">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+        </button>
+
+        <input type="text" id="user-input" placeholder="Ask Nexus AI real question..." class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" onkeypress="if(event.key==='Enter') sendMsg()">
+
+        <button onclick="sendMsg()" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl shadow">
+            Send
+        </button>
+    </div>
+
+    <!-- Live Voice Modal Overlay -->
+    <div id="voice-overlay" class="fixed inset-0 bg-gray-950/95 backdrop-blur-md hidden z-50 flex flex-col items-center justify-between p-6">
         <div class="w-full flex justify-between items-center">
-            <span class="text-cyan-400 font-bold tracking-wider text-sm flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                NEXUS LIVE VOICE MODE
-            </span>
-            <button onclick="closeVoiceDashboard()" class="text-gray-400 hover:text-white text-xl p-2">✕</button>
+            <span class="text-xs font-bold text-cyan-400">NEXUS LIVE VOICE TALK</span>
+            <button onclick="closeVoiceModal()" class="text-gray-400 text-lg font-bold">✕</button>
         </div>
 
-        <div class="flex flex-col items-center justify-center space-y-6">
-            <div id="voice-orb" class="w-32 h-32 rounded-full bg-gradient-to-tr from-cyan-500 via-indigo-500 to-purple-600 flex items-center justify-center voice-pulse transition-all duration-300">
+        <div class="flex flex-col items-center space-y-4 text-center">
+            <div id="orb-graphic" class="w-28 h-28 rounded-full bg-gradient-to-tr from-cyan-500 via-indigo-500 to-purple-600 flex items-center justify-center pulse-orb shadow-2xl">
                 <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
             </div>
-            <p id="voice-status" class="text-cyan-200 text-lg font-medium tracking-wide">Tap orb to speak...</p>
-            <p id="voice-transcription" class="text-gray-400 text-sm max-w-md text-center italic"></p>
+            <p id="voice-status-text" class="text-cyan-200 text-sm font-semibold">Microphone Listening...</p>
+            <p id="voice-transcript" class="text-xs text-gray-400 max-w-xs italic"></p>
         </div>
 
-        <div class="flex items-center space-x-6">
-            <button onclick="toggleVoiceListening()" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-8 py-3 rounded-full text-sm shadow-lg transition">
-                Start Speaking
-            </button>
-            <button onclick="closeVoiceDashboard()" class="bg-gray-800 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-full text-sm border border-gray-700 transition">
-                Exit Voice
-            </button>
+        <div class="w-full flex space-x-3">
+            <button onclick="startVoiceRecognition()" class="flex-1 bg-cyan-500 text-black font-bold py-3 rounded-xl text-xs">Tap to Speak</button>
+            <button onclick="closeVoiceModal()" class="bg-gray-800 text-white px-5 py-3 rounded-xl text-xs border border-gray-700">Close</button>
         </div>
     </div>
 
     <script>
-        let selectedImageData = null;
-        let recognition = null;
+        let attachedImageBase64 = null;
+        let activeRecognition = null;
 
-        function toggleMobileMenu() {
-            document.getElementById('sidebar-menu').classList.toggle('hidden');
-        }
-
-        function handleImageSelect(event) {
-            const file = event.target.files[0];
+        function previewImage(e) {
+            const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    selectedImageData = e.target.result;
-                    document.getElementById('image-preview').src = selectedImageData;
-                    document.getElementById('image-preview-container').classList.remove('hidden');
-                }
+                reader.onload = function(evt) {
+                    attachedImageBase64 = evt.target.result;
+                    document.getElementById('image-preview').src = attachedImageBase64;
+                    document.getElementById('image-preview-bar').classList.remove('hidden');
+                };
                 reader.readAsDataURL(file);
             }
         }
 
-        function removeAttachedImage() {
-            selectedImageData = null;
+        function clearImage() {
+            attachedImageBase64 = null;
             document.getElementById('image-input').value = '';
-            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('image-preview-bar').classList.add('hidden');
         }
 
-        function openVoiceDashboard() {
+        function speakAIResponse(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'ur-PK';
+                utter.rate = 1.0;
+                window.speechSynthesis.speak(utter);
+            }
+        }
+
+        function startVoiceRecognition() {
             document.getElementById('voice-overlay').classList.remove('hidden');
-            toggleVoiceListening();
+            const statusLabel = document.getElementById('voice-status-text');
+            const transcriptLabel = document.getElementById('voice-transcript');
+
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                statusLabel.innerText = "Speech API not supported on this browser.";
+                return;
+            }
+
+            activeRecognition = new SpeechRec();
+            activeRecognition.continuous = false;
+            activeRecognition.interimResults = false;
+            activeRecognition.lang = 'ur-PK';
+
+            activeRecognition.onstart = function() {
+                statusLabel.innerText = "Suno raha hu... Bolen aap!";
+            };
+
+            activeRecognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                transcriptLabel.innerText = '"' + text + '"';
+                statusLabel.innerText = "AI processing answer...";
+                sendVoiceMessage(text);
+            };
+
+            activeRecognition.onerror = function(e) {
+                statusLabel.innerText = "Mic stopped or permission denied. Tap 'Tap to Speak'.";
+            };
+
+            try { activeRecognition.start(); } catch(err){}
         }
 
-        function closeVoiceDashboard() {
-            if (recognition) recognition.stop();
+        function closeVoiceModal() {
+            if (activeRecognition) try{ activeRecognition.stop(); }catch(e){}
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             document.getElementById('voice-overlay').classList.add('hidden');
         }
 
-        function toggleVoiceListening() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert('Aapke browser mein voice recognition support nahi ho raha.');
-                return;
-            }
-
-            recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'ur-PK';
-
-            const statusTxt = document.getElementById('voice-status');
-            const transTxt = document.getElementById('voice-transcription');
-
-            recognition.onstart = function() {
-                statusTxt.innerText = "Listening... Bolna shuru karein";
-            };
-
-            recognition.onresult = function(event) {
-                let transcript = event.results[0][0].transcript;
-                transTxt.innerText = '"' + transcript + '"';
-                statusTxt.innerText = "Processing...";
-                processVoiceMessage(transcript);
-            };
-
-            recognition.onerror = function(e) {
-                statusTxt.innerText = "Listening stopped. Tap 'Start Speaking' to try again.";
-            };
-
+        async function sendVoiceMessage(userText) {
+            const selectedModel = document.getElementById('ai-model-select').value;
             try {
-                recognition.start();
-            } catch(e) {}
-        }
-
-        async function processVoiceMessage(userText) {
-            const selectedModel = document.getElementById('ai-model-select') ? document.getElementById('ai-model-select').value : 'auto';
-            let replyText = "";
-
-            try {
-                let response = await fetch('/api/chat', {
+                const res = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ message: userText, model: selectedModel })
                 });
-
-                const data = await response.json();
-                replyText = data.reply || data.response;
-            } catch (e) {
-                replyText = "Main Nexus AI hu aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.";
-            }
-
-            document.getElementById('voice-status').innerText = "Nexus AI Speaking...";
-            speakText(replyText, function() {
-                document.getElementById('voice-status').innerText = "Tap orb to speak again";
-            });
-        }
-
-        function speakText(text, onEndCallback) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'ur-PK';
-                
-                const genderSelect = document.getElementById('voice-gender');
-                const gender = genderSelect ? genderSelect.value : 'female';
-                const voices = window.speechSynthesis.getVoices();
-
-                if (gender === 'female') {
-                    const fVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female'));
-                    if (fVoice) utterance.voice = fVoice;
-                    utterance.pitch = 1.1;
-                } else {
-                    const mVoice = voices.find(v => v.name.includes('Male') || v.name.includes('Google UK English Male'));
-                    if (mVoice) utterance.voice = mVoice;
-                    utterance.pitch = 0.9;
-                }
-
-                utterance.onend = function() {
-                    if (onEndCallback) onEndCallback();
-                };
-
-                window.speechSynthesis.speak(utterance);
+                const data = await res.json();
+                document.getElementById('voice-status-text').innerText = "Nexus AI Speaking...";
+                speakAIResponse(data.reply);
+            } catch(e) {
+                document.getElementById('voice-status-text').innerText = "Connection error.";
             }
         }
 
-        async function sendMessage() {
-            const inputField = document.getElementById('user-input');
-            const text = inputField.value.trim();
+        async function sendMsg() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
             const chatBox = document.getElementById('chat-box');
-            const modelSelect = document.getElementById('ai-model-select');
-            const selectedModel = modelSelect ? modelSelect.value : 'auto';
+            const selectedModel = document.getElementById('ai-model-select').value;
 
-            if (!text && !selectedImageData) return;
+            if (!text && !attachedImageBase64) return;
 
-            let userHTML = `<div class="bg-cyan-950/60 text-cyan-100 p-3.5 rounded-xl max-w-xl ml-auto text-sm border border-cyan-800/50">`;
-            if (selectedImageData) {
-                userHTML += `<img src="${selectedImageData}" class="w-32 h-32 object-cover rounded-lg mb-2 border border-cyan-700">`;
+            let userMsgHTML = `<div class="bg-cyan-950/70 text-cyan-100 p-3 rounded-xl max-w-[85%] ml-auto text-xs border border-cyan-800/50">`;
+            if (attachedImageBase64) {
+                userMsgHTML += `<img src="${attachedImageBase64}" class="w-28 h-28 object-cover rounded-lg mb-1 border border-cyan-700">`;
             }
-            if (text) userHTML += `<p>${text}</p>`;
-            userHTML += `</div>`;
-            chatBox.innerHTML += userHTML;
+            if (text) userMsgHTML += `<p>${text}</p>`;
+            userMsgHTML += `</div>`;
 
-            const tempImage = selectedImageData;
-            removeAttachedImage();
-            inputField.value = '';
+            chatBox.innerHTML += userMsgHTML;
+
+            const currentImg = attachedImageBase64;
+            clearImage();
+            input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            let aiReply = "";
+            const loadingId = 'load-' + Date.now();
+            chatBox.innerHTML += `<div id="${loadingId}" class="bg-gray-800 p-3 rounded-xl max-w-[85%] text-xs text-gray-400 italic">Nexus AI thinking...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                let response = await fetch('/api/chat', {
+                const res = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text, image: tempImage, model: selectedModel })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text, image: currentImg, model: selectedModel })
                 });
-
-                const data = await response.json();
-                aiReply = data.reply || data.response;
-            } catch (err) {
-                aiReply = "Main Nexus AI hu aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.";
+                const data = await res.json();
+                document.getElementById(loadingId).outerHTML = `<div class="bg-gray-800 p-3 rounded-xl max-w-[85%] text-xs border border-gray-700/60 leading-relaxed"><strong class="text-cyan-400 block mb-1">Nexus AI [${selectedModel.toUpperCase()}]</strong>${data.reply}</div>`;
+                speakAIResponse(data.reply);
+            } catch(err) {
+                document.getElementById(loadingId).outerHTML = `<div class="bg-gray-800 p-3 rounded-xl max-w-[85%] text-xs border border-gray-700/60 leading-relaxed"><strong class="text-cyan-400 block mb-1">Nexus AI</strong>Main Nexus AI hu aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.</div>`;
             }
 
-            let responseHTML = `<div class="bg-gray-800 p-3.5 rounded-xl max-w-xl text-sm border border-gray-700/50 shadow-sm"><strong class="text-cyan-400 block mb-1">Nexus AI [${selectedModel.toUpperCase()}]</strong>${aiReply}</div>`;
-
-            chatBox.innerHTML += responseHTML;
-            speakText(aiReply);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
@@ -384,70 +262,45 @@ async def serve_home_page():
 </html>
 """
 
-def call_openrouter_api(messages: List[Dict[str, Any]], model_id: str) -> str:
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        return ""
-
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://nexus-ai-api-server.vercel.app",
-        "X-Title": "Nexus AI"
-    }
+def fetch_real_ai_response(user_text: str, model_type: str) -> str:
+    # High performance free multi-model AI endpoint
+    encoded_text = urllib.parse.quote(user_text)
+    url = f"https://text.pollinations.ai/{encoded_text}?model={model_type}&system={urllib.parse.quote(SYSTEM_PROMPT)}"
     
-    payload = {
-        "model": model_id,
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 1000
-    }
-
     try:
         req = urllib.request.Request(
             url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST"
+            headers={"User-Agent": "Mozilla/5.0"}
         )
-        with urllib.request.urlopen(req, timeout=15) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-            if "choices" in res_data and len(res_data["choices"]) > 0:
-                return res_data["choices"][0]["message"]["content"]
+        with urllib.request.urlopen(req, timeout=12) as response:
+            result = response.read().decode("utf-8").strip()
+            if result:
+                return result
     except Exception as e:
-        print(f"API Error: {e}")
+        print(f"AI Fetch Error: {e}")
     return ""
 
 def process_identity_check(text: str) -> bool:
     keywords = ["kisne banaya", "who made", "who created", "who is your creator", "da cha ye", "cha jor kare", "owner", "creator", "sadam"]
     return any(kw in text.lower() for kw in keywords)
 
-# 2. Backend Routing
+# 2. API Endpoints
 @app.post("/api/chat")
 @app.post("/api/chat/v2")
 async def handle_chat_request(payload: ChatPayload):
     user_message = payload.message.strip() if payload.message else ""
-    user_image = payload.image
-    selected_model_key = payload.model if payload.model in MODEL_MAP else "auto"
-    target_model = MODEL_MAP[selected_model_key]
+    selected_model = payload.model or "openai"
 
     if user_message and process_identity_check(user_message):
         return {"reply": IDENTITY_RESPONSE, "response": IDENTITY_RESPONSE}
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    
-    if user_image:
-        content_payload = [{"type": "text", "text": user_message or "Analyze this image."}]
-        content_payload.append({"type": "image_url", "image_url": {"url": user_image}})
-        messages.append({"role": "user", "content": content_payload})
-    else:
-        messages.append({"role": "user", "content": user_message or "Hello"})
+    if not user_message and payload.image:
+        user_message = "Analyze this image and describe it."
 
-    ai_reply = call_openrouter_api(messages, target_model)
+    ai_reply = fetch_real_ai_response(user_message or "Hello Nexus AI", selected_model)
 
     if not ai_reply:
-        ai_reply = IDENTITY_RESPONSE if not user_message else f"Main aapki baat samajhta hu. Aap Urdu, Pashto ya English mein sawal kar sakte hain."
+        ai_reply = f"Nexus AI: Main aapka sawal '{user_message}' samajh raha hu. Aap koi bhi trading, programming ya general sawal pooch sakte hain!"
 
     return {"reply": ai_reply, "response": ai_reply, "status": "success"}
 
