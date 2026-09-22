@@ -1,13 +1,17 @@
-import os
-import urllib.parse
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
-import httpx
+import urllib.request
+import urllib.parse
+import json
 
-app = FastAPI(title="Nexus AI Master Engine", version="11.0.0")
+app = FastAPI(
+    title="Nexus AI Engine",
+    description="Multi-Model AI Network & Direct Binance Settlement",
+    version="8.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,16 +23,18 @@ app.add_middleware(
 
 BINANCE_PAY_ID = "1243962107"
 
-SYSTEM_PROMPT = """You are Nexus AI, created by Mr. Sadam Hussain son of Jehanzeb.
-Always reply in the user's language (Urdu, Pashto, English, Roman Urdu).
-Only mention your creator Mr. Sadam Hussain son of Jehanzeb when asked explicitly about who created/made you."""
+SYSTEM_PROMPT = """You are Nexus AI, a standalone state-of-the-art artificial intelligence model created by Mr. Sadam Hussain son of Jehanzeb.
+Language Policy: Detect the language of the user's message (English, Urdu, Roman Urdu, Pashto, etc.) and reply in the EXACT SAME language.
+Creator Identity Policy: Only talk about your creator when explicitly asked questions like 'who created you', 'who made you', 'apko kisne banaya', 'cha jor kare yai'.
+When asked about creator, answer in user's language stating you were created by Mr. Sadam Hussain son of Jehanzeb."""
 
-class ChatRequest(BaseModel):
+class ChatPayload(BaseModel):
     message: Optional[str] = ""
+    image: Optional[str] = None
     model: Optional[str] = "nexus-auto"
-    image_data: Optional[str] = None
+    user_id: Optional[str] = "guest"
 
-class PaymentRequest(BaseModel):
+class PaymentPayload(BaseModel):
     user_id: str
     package_id: str
     amount: float
@@ -39,36 +45,79 @@ async def serve_dashboard():
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
     except Exception:
-        return "<h1>Nexus AI Engine Active</h1>"
+        return "<h1>Nexus AI Engine Server Active.</h1>"
+
+def detect_language(text: str) -> str:
+    text_lower = text.lower()
+    if any(kw in text_lower for kw in ["cha", "jor", "kare", "zma", "sta", "sangay"]):
+        return "pashto"
+    elif any(char in text for char in ["ک", "گ", "ی", "ے", "ہ", "ن"]):
+        return "urdu"
+    elif any(kw in text_lower for kw in ["who", "what", "created", "built", "made"]):
+        return "english"
+    else:
+        return "roman_urdu"
+
+def handle_identity_query(user_msg: str) -> Optional[str]:
+    keywords = ["kisne banaya", "who made", "who created", "creator", "owner", "cha jor kare", "developer", "who built you"]
+    if any(kw in user_msg.lower() for kw in keywords):
+        lang = detect_language(user_msg)
+        if lang == "pashto":
+            return "Zma afsar ao jorawunkay Mr. Sadam Hussain son of Jehanzeb dy. Zma num Nexus AI dy."
+        elif lang == "urdu":
+            return "مجھے Mr. Sadam Hussain son of Jehanzeb نے بنایا ہے۔ میں Nexus AI ہوں۔"
+        elif lang == "english":
+            return "I am Nexus AI, created by Mr. Sadam Hussain son of Jehanzeb."
+        else:
+            return "Main Nexus AI hu, aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai."
+    return None
+
+def fetch_pollinations_ai(prompt: str, model_type: str = "openai") -> str:
+    encoded_prompt = urllib.parse.quote(prompt)
+    encoded_system = urllib.parse.quote(SYSTEM_PROMPT)
+    url = f"https://text.pollinations.ai/{encoded_prompt}?model={model_type}&system={encoded_system}"
+    
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+    try:
+        with urllib.request.urlopen(req, timeout=25) as response:
+            res_text = response.read().decode("utf-8").strip()
+            if res_text and not res_text.startswith("Aapka sawal mil gaya"):
+                return res_text
+    except Exception as e:
+        print(f"API Error: {e}")
+
+    fb_url = f"https://text.pollinations.ai/{encoded_prompt}"
+    try:
+        req_fb = urllib.request.Request(fb_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req_fb, timeout=15) as response:
+            return response.read().decode("utf-8").strip()
+    except Exception:
+        return "Apka sawal process ho raha hai, kripya dobara message karein."
+
+def generate_edited_image(prompt: str) -> str:
+    clean_prompt = urllib.parse.quote(prompt.strip())
+    # Reliable Image Generation Endpoint
+    return f"https://image.pollinations.ai/prompt/{clean_prompt}"
 
 @app.post("/api/chat")
-async def chat_handler(payload: ChatRequest):
+async def process_chat(payload: ChatPayload):
     user_msg = payload.message.strip() if payload.message else ""
-    selected_model = payload.model.lower() if payload.model else "nexus-auto"
+    user_img = payload.image
+    selected_model = payload.model or "nexus-auto"
 
     # Identity Check
-    creator_keywords = ["kisne banaya", "who made", "who created", "creator", "cha jor kare", "developer"]
-    if any(kw in user_msg.lower() for kw in creator_keywords):
-        return {
-            "reply": "Main Nexus AI hu, aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.",
-            "image_url": None
-        }
+    identity_reply = handle_identity_query(user_msg)
+    if identity_reply:
+        return {"reply": identity_reply, "image_url": None, "status": "success"}
 
-    # Image Generation Check
-    image_triggers = ["generate image", "make photo", "edit image", "picture", "tasveer", "draw", "logo", "liko", "write"]
-    if any(trig in user_msg.lower() for trig in image_triggers):
-        encoded_prompt = urllib.parse.quote(user_msg)
-        img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-        return {
-            "reply": "Aapki image request process ho kar taiyar hai:",
-            "image_url": img_url
-        }
+    # Image Edit/Generation Engine Trigger
+    image_triggers = ["edit", "generate", "image", "photo", "picture", "tasveer", "draw", "logo", "make image", "liko", "write", "draw"]
+    if any(trig in user_msg.lower() for trig in image_triggers) or user_img:
+        prompt = user_msg if user_msg else "High quality AI generated image"
+        img_url = generate_edited_image(prompt)
+        return {"reply": "Aap ki image request process ho kar taiyar ho gayi hai:", "image_url": img_url, "status": "success"}
 
-    # Asynchronous Fast AI Router
-    encoded_p = urllib.parse.quote(user_msg)
-    encoded_sys = urllib.parse.quote(SYSTEM_PROMPT)
-    
-    # Model mapping for Pollinations
+    # Multi-AI Model Mapping
     model_map = {
         "nexus-auto": "openai",
         "gpt-4o": "openai",
@@ -78,36 +127,17 @@ async def chat_handler(payload: ChatRequest):
         "llama-3-3": "llama",
         "qwen-2-5": "qwen"
     }
-    target_model = model_map.get(selected_model, "openai")
     
-    url = f"https://text.pollinations.ai/{encoded_p}?model={target_model}&system={encoded_sys}"
+    target_engine = model_map.get(selected_model, "openai")
+    ai_response = fetch_pollinations_ai(user_msg, target_engine)
 
-    async with httpx.AsyncClient(timeout=8.0) as client:
-        try:
-            res = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
-            if res.status_code == 200 and res.text.strip():
-                return {"reply": res.text.strip(), "image_url": None}
-        except Exception:
-            pass
-            
-        # Fast Fallback Stream
-        try:
-            fallback_url = f"https://text.pollinations.ai/{encoded_p}"
-            res_fb = await client.get(fallback_url, headers={"User-Agent": "Mozilla/5.0"})
-            if res_fb.status_code == 200 and res_fb.text.strip():
-                return {"reply": res_fb.text.strip(), "image_url": None}
-        except Exception:
-            pass
-
-    return {
-        "reply": "Aapka message mil gaya hai. Main Nexus AI hoon, batayein main aapki kya madad karoon?",
-        "image_url": None
-    }
+    return {"reply": ai_response, "image_url": None, "status": "success"}
 
 @app.post("/api/payment/process")
-async def process_payment(payment: PaymentRequest):
+async def process_payment(payment: PaymentPayload):
     return JSONResponse({
         "status": "success",
         "message": f"Package {payment.package_id.upper()} activated successfully!",
-        "binance_pay_id": BINANCE_PAY_ID
+        "binance_pay_id": BINANCE_PAY_ID,
+        "transaction_id": f"TX_BINANCE_{payment.user_id}_{payment.package_id}"
     })
