@@ -23,8 +23,8 @@
                 <p class="text-[10px] text-gray-400">One Nexus. Infinite AI.</p>
             </div>
         </div>
-        <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white p-2">
-            svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white p-2 focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
     </header>
 
@@ -69,21 +69,42 @@
         <section id="section-chat" class="flex-1 flex flex-col min-h-[500px]">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
                 <h2 class="text-lg md:text-xl font-bold text-white">Multi-AI Chat Assistant</h2>
-                <select class="bg-gray-800 text-xs border border-gray-700 text-gray-300 rounded-lg px-3 py-2 w-full sm:w-auto">
+                <select class="bg-gray-800 text-xs border border-gray-700 text-gray-300 rounded-lg px-3 py-2 w-full sm:w-auto focus:outline-none">
                     <option>Auto-Select Best AI</option>
                     <option>ChatGPT-4o</option>
                     <option>Claude 3.5 Sonnet</option>
                     <option>Gemini 1.5 Pro</option>
                 </select>
             </div>
+
+            <!-- Chat Display Box -->
             <div class="flex-1 card rounded-xl p-4 overflow-y-auto mb-4 space-y-4 min-h-[300px]" id="chat-box">
-                <div class="bg-gray-800 p-3 rounded-lg max-w-xl text-sm">
-                    <strong class="text-cyan-400">Nexus AI:</strong> Assalam-o-Alaikum! Main Nexus AI hu. Aaj main aapki kya madad kar sakta hu?
+                <div class="bg-gray-800 p-3.5 rounded-xl max-w-xl text-sm border border-gray-700/50 shadow-sm">
+                    <strong class="text-cyan-400 block mb-1">Nexus AI</strong>
+                    Hello! I am Nexus AI. How can I assist you today?
                 </div>
             </div>
-            <div class="flex gap-2">
-                <input type="text" placeholder="Ask anything to Nexus AI..." class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500">
-                <button class="bg-cyan-500 px-5 py-3 rounded-lg font-bold text-black hover:bg-cyan-400 text-sm">Send</button>
+
+            <!-- Enhanced Input Control Panel -->
+            <div class="flex items-center gap-2 bg-gray-900 border border-gray-800 p-2 rounded-xl">
+                <!-- Image Attachment Button -->
+                <label class="cursor-pointer p-2 text-gray-400 hover:text-cyan-400 hover:bg-gray-800 rounded-lg transition" title="Attach Image">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    <input type="file" accept="image/*" class="hidden">
+                </label>
+
+                <!-- Voice Input Button -->
+                <button type="button" class="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-800 rounded-lg transition" title="Voice Input">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </button>
+
+                <!-- Text Input Field -->
+                <input type="text" placeholder="Ask anything to Nexus AI..." class="flex-1 bg-transparent text-white px-2 py-2 text-sm focus:outline-none placeholder-gray-500">
+
+                <!-- Send Button -->
+                <button class="bg-cyan-500 px-5 py-2.5 rounded-lg font-bold text-black hover:bg-cyan-400 text-sm shadow-md transition flex items-center space-x-1">
+                    <span>Send</span>
+                </button>
             </div>
         </section>
 
@@ -94,20 +115,20 @@
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-cyan-400">✨ Prompt to Image</h3>
                     <p class="text-xs text-gray-400">Generate HD 4K AI images from text description.</p>
-                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-20 text-white" placeholder="Describe the image..."></textarea>
-                    <button class="w-full bg-cyan-600 py-2 rounded-lg text-xs font-bold text-white">Generate Image</button>
+                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-20 text-white focus:outline-none" placeholder="Describe the image..."></textarea>
+                    <button class="w-full bg-cyan-600 py-2 rounded-lg text-xs font-bold text-white hover:bg-cyan-500 transition">Generate Image</button>
                 </div>
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-purple-400">🖼️ Background Remover</h3>
                     <p class="text-xs text-gray-400">Remove background from photos automatically in 1-click.</p>
                     <input type="file" class="w-full text-xs text-gray-400 bg-gray-800 p-2 rounded-lg border border-gray-700">
-                    <button class="w-full bg-purple-600 py-2 rounded-lg text-xs font-bold text-white">Remove Background</button>
+                    <button class="w-full bg-purple-600 py-2 rounded-lg text-xs font-bold text-white hover:bg-purple-500 transition">Remove Background</button>
                 </div>
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-blue-400">🔍 HD Upscaler & Eraser</h3>
                     <p class="text-xs text-gray-400">Enhance image quality or remove unwanted objects.</p>
                     <input type="file" class="w-full text-xs text-gray-400 bg-gray-800 p-2 rounded-lg border border-gray-700">
-                    <button class="w-full bg-blue-600 py-2 rounded-lg text-xs font-bold text-white">Enhance Image</button>
+                    <button class="w-full bg-blue-600 py-2 rounded-lg text-xs font-bold text-white hover:bg-blue-500 transition">Enhance Image</button>
                 </div>
             </div>
         </section>
@@ -119,14 +140,14 @@
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-cyan-400">🎬 Text to Video Creator</h3>
                     <p class="text-xs text-gray-400">Create AI Reels & short videos using prompts.</p>
-                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24 text-white" placeholder="Describe the video scene..."></textarea>
-                    <button class="w-full bg-cyan-600 py-2 rounded-lg text-xs font-bold text-white">Create Video</button>
+                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24 text-white focus:outline-none" placeholder="Describe the video scene..."></textarea>
+                    <button class="w-full bg-cyan-600 py-2 rounded-lg text-xs font-bold text-white hover:bg-cyan-500 transition">Create Video</button>
                 </div>
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-purple-400">🎙️ AI Voiceover & Captions</h3>
                     <p class="text-xs text-gray-400">Convert text script into ultra-realistic AI voices.</p>
-                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24 text-white" placeholder="Enter script for voiceover..."></textarea>
-                    <button class="w-full bg-purple-600 py-2 rounded-lg text-xs font-bold text-white">Generate Audio</button>
+                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24 text-white focus:outline-none" placeholder="Enter script for voiceover..."></textarea>
+                    <button class="w-full bg-purple-600 py-2 rounded-lg text-xs font-bold text-white hover:bg-purple-500 transition">Generate Audio</button>
                 </div>
             </div>
         </section>
