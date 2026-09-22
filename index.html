@@ -80,9 +80,21 @@
             <!-- Chat Display Box -->
             <div class="flex-1 card rounded-xl p-4 overflow-y-auto mb-4 space-y-4 min-h-[300px]" id="chat-box">
                 <div class="bg-gray-800 p-3.5 rounded-xl max-w-xl text-sm border border-gray-700/50 shadow-sm">
-                    <strong class="text-cyan-400 block mb-1">Nexus AI</strong>
+                    <div class="flex justify-between items-center mb-1">
+                        <strong class="text-cyan-400">Nexus AI</strong>
+                        <button onclick="speakText('Hello! I am Nexus AI. How can I assist you today?')" class="text-gray-400 hover:text-white text-xs">🔊 Listen</button>
+                    </div>
                     Hello! I am Nexus AI. How can I assist you today?
                 </div>
+            </div>
+
+            <!-- Image Preview Area (Hidden by default) -->
+            <div id="image-preview-container" class="hidden mb-2 p-2 bg-gray-800 rounded-lg flex items-center justify-between border border-cyan-500/30">
+                <div class="flex items-center space-x-3">
+                    <img id="image-preview" class="w-12 h-12 object-cover rounded-lg border border-gray-700">
+                    <span class="text-xs text-cyan-400 font-medium">Image attached for AI analysis/editing</span>
+                </div>
+                <button onclick="removeAttachedImage()" class="text-gray-400 hover:text-red-400 text-xs font-bold px-2 py-1">✕ Remove</button>
             </div>
 
             <!-- Enhanced Input Control Panel -->
@@ -90,19 +102,19 @@
                 <!-- Image Attachment Button -->
                 <label class="cursor-pointer p-2 text-gray-400 hover:text-cyan-400 hover:bg-gray-800 rounded-lg transition" title="Attach Image">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                    <input type="file" accept="image/*" class="hidden">
+                    <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
                 </label>
 
                 <!-- Voice Input Button -->
-                <button type="button" class="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-800 rounded-lg transition" title="Voice Input">
+                <button type="button" id="mic-btn" onclick="toggleVoiceRecording()" class="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-800 rounded-lg transition" title="Voice Input">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </button>
 
                 <!-- Text Input Field -->
-                <input type="text" placeholder="Ask anything to Nexus AI..." class="flex-1 bg-transparent text-white px-2 py-2 text-sm focus:outline-none placeholder-gray-500">
+                <input type="text" id="user-input" placeholder="Ask anything or record voice..." class="flex-1 bg-transparent text-white px-2 py-2 text-sm focus:outline-none placeholder-gray-500" onkeypress="if(event.key==='Enter') sendMessage()">
 
                 <!-- Send Button -->
-                <button class="bg-cyan-500 px-5 py-2.5 rounded-lg font-bold text-black hover:bg-cyan-400 text-sm shadow-md transition flex items-center space-x-1">
+                <button onclick="sendMessage()" class="bg-cyan-500 px-5 py-2.5 rounded-lg font-bold text-black hover:bg-cyan-400 text-sm shadow-md transition flex items-center space-x-1">
                     <span>Send</span>
                 </button>
             </div>
@@ -155,6 +167,10 @@
     </main>
 
     <script>
+        let selectedImageData = null;
+        let recognition = null;
+        let isRecording = false;
+
         function switchTab(tab) {
             ['chat', 'image', 'video'].forEach(t => {
                 document.getElementById('section-' + t).classList.add('hidden');
@@ -168,8 +184,155 @@
         }
 
         function toggleMobileMenu() {
-            const sidebar = document.getElementById('sidebar-menu');
-            sidebar.classList.toggle('hidden');
+            document.getElementById('sidebar-menu').classList.toggle('hidden');
+        }
+
+        // --- Image Selection Logic ---
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedImageData = e.target.result;
+                    document.getElementById('image-preview').src = selectedImageData;
+                    document.getElementById('image-preview-container').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeAttachedImage() {
+            selectedImageData = null;
+            document.getElementById('image-input').value = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+        }
+
+        // --- Voice Recognition Logic ---
+        function toggleVoiceRecording() {
+            const micBtn = document.getElementById('mic-btn');
+            const inputField = document.getElementById('user-input');
+
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('Voice recognition is not supported in your browser. Please use Chrome or Safari.');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+                isRecording = false;
+                micBtn.classList.remove('text-red-500', 'animate-pulse');
+                micBtn.classList.add('text-gray-400');
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isRecording = true;
+                micBtn.classList.remove('text-gray-400');
+                micBtn.classList.add('text-red-500', 'animate-pulse');
+                inputField.placeholder = "Listening... Speak now...";
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                inputField.value = transcript;
+            };
+
+            recognition.onerror = function() {
+                isRecording = false;
+                micBtn.classList.remove('text-red-500', 'animate-pulse');
+                micBtn.classList.add('text-gray-400');
+                inputField.placeholder = "Ask anything to Nexus AI...";
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                micBtn.classList.remove('text-red-500', 'animate-pulse');
+                micBtn.classList.add('text-gray-400');
+                inputField.placeholder = "Ask anything to Nexus AI...";
+            };
+
+            recognition.start();
+        }
+
+        // --- Speech Output (AI Voice Response) ---
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- Send Message & AI Logic ---
+        function sendMessage() {
+            const inputField = document.getElementById('user-input');
+            const text = inputField.value.trim();
+            const chatBox = document.getElementById('chat-box');
+
+            if (!text && !selectedImageData) return;
+
+            // Render User Message
+            let userHTML = `<div class="bg-cyan-950/60 text-cyan-100 p-3.5 rounded-xl max-w-xl ml-auto text-sm border border-cyan-800/50">`;
+            if (selectedImageData) {
+                userHTML += `<img src="${selectedImageData}" class="w-32 h-32 object-cover rounded-lg mb-2 border border-cyan-700">`;
+            }
+            if (text) {
+                userHTML += `<p>${text}</p>`;
+            }
+            userHTML += `</div>`;
+            chatBox.innerHTML += userHTML;
+
+            // Clear Input Area
+            const tempImage = selectedImageData;
+            removeAttachedImage();
+            inputField.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Render AI Thinking State
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `
+                <div id="${loadingId}" class="bg-gray-800 p-3.5 rounded-xl max-w-xl text-sm border border-gray-700/50 shadow-sm animate-pulse">
+                    <strong class="text-cyan-400 block mb-1">Nexus AI</strong>
+                    Processing input...
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Generate AI Answer
+            setTimeout(() => {
+                document.getElementById(loadingId).remove();
+
+                let aiResponse = "";
+                if (tempImage && text) {
+                    aiResponse = `I have received your image and request: "${text}". Image editing & vision features will be processed by FastAPI/OpenAI API backend.`;
+                } else if (tempImage) {
+                    aiResponse = "Image received successfully! Select an action (e.g., Edit, Remove Background, or Analyze).";
+                } else {
+                    aiResponse = `Received: "${text}". I am connected to the Nexus AI API pipeline!`;
+                }
+
+                chatBox.innerHTML += `
+                    <div class="bg-gray-800 p-3.5 rounded-xl max-w-xl text-sm border border-gray-700/50 shadow-sm">
+                        <div class="flex justify-between items-center mb-1">
+                            <strong class="text-cyan-400">Nexus AI</strong>
+                            <button onclick="speakText('${aiResponse.replace(/'/g, "\\'")}')" class="text-gray-400 hover:text-white text-xs">🔊 Listen</button>
+                        </div>
+                        ${aiResponse}
+                    </div>
+                `;
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // Auto Speak AI response
+                speakText(aiResponse);
+            }, 1000);
         }
     </script>
 </body>
