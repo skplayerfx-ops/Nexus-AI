@@ -3,52 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nexus AI — Master Multi-Model Engine</title>
+    <title>Nexus AI — Master Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #070a0f; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
-        .glass { background: rgba(17, 24, 39, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .pulse-ring { animation: pulse 1.8s infinite ease-in-out; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.08); opacity: 1; } }
+        body { background-color: #080c14; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .glass-panel { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .pulse-anim { animation: pulse 1.6s infinite ease-in-out; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
     </style>
 </head>
-<body class="flex flex-col md:flex-row min-h-screen relative overflow-x-hidden">
+<body class="flex flex-col md:flex-row min-h-screen overflow-x-hidden">
 
-    <!-- Mobile Header -->
-    <header class="md:hidden glass p-3 flex items-center justify-between sticky top-0 z-30">
+    <!-- Mobile Top Header -->
+    <header class="md:hidden glass-panel p-3 flex items-center justify-between sticky top-0 z-30">
         <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-extrabold text-white text-sm shadow-lg">NX</div>
-            <div>
-                <h1 class="font-bold text-sm text-white tracking-wide">NEXUS AI</h1>
-                <p class="text-[10px] text-cyan-400">Master Engine</p>
-            </div>
+            <div class="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center font-bold text-black text-sm">NX</div>
+            <span class="font-bold text-sm text-white tracking-wide">NEXUS AI</span>
         </div>
-        <div class="flex items-center space-x-2">
-            <button onclick="openPackagesModal()" class="bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold text-[11px] px-3 py-1.5 rounded-lg shadow">
-                💎 Pro Packages
-            </button>
-            <button onclick="toggleSidebar()" class="text-gray-300 p-1">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
-        </div>
+        <button onclick="openPackagesModal()" class="bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-extrabold text-[11px] px-3 py-1.5 rounded-lg shadow">
+            💎 Pro Packages
+        </button>
     </header>
 
-    <!-- Sidebar Navigation -->
-    <aside id="sidebar" class="hidden md:flex w-full md:w-64 glass flex-col justify-between p-4 flex-shrink-0 z-40">
+    <!-- Sidebar Controls -->
+    <aside class="hidden md:flex w-64 glass-panel flex-col justify-between p-4 flex-shrink-0">
         <div>
-            <div class="hidden md:flex items-center space-x-3 mb-6 px-1">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-xl">NX</div>
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-black font-black text-lg shadow-lg">NX</div>
                 <div>
-                    <h1 class="font-bold text-base text-white tracking-wider">NEXUS AI</h1>
-                    <p class="text-xs text-cyan-400">Multi-AI Platform</p>
+                    <h1 class="font-bold text-base text-white">NEXUS AI</h1>
+                    <p class="text-[10px] text-cyan-400">Master Multi-AI System</p>
                 </div>
             </div>
 
             <div class="space-y-4">
-                <!-- AI Engine Selector (Step 2 & 3) -->
                 <div>
-                    <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">🤖 Choose AI Engine</label>
-                    <select id="model-select" class="w-full bg-gray-900 border border-cyan-500/30 text-cyan-300 text-xs rounded-xl p-3 focus:outline-none focus:border-cyan-400 font-medium">
+                    <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">🤖 Select AI Model</label>
+                    <select id="model-select" class="w-full bg-slate-900 border border-cyan-500/30 text-cyan-300 text-xs rounded-xl p-3 focus:outline-none">
                         <option value="nexus-auto" selected>✨ All-In-One (Smart Auto Selector)</option>
                         <option value="gpt-4o">⚡ OpenAI ChatGPT (GPT-4o)</option>
                         <option value="claude-3-5">🔮 Anthropic Claude 3.5 Sonnet</option>
@@ -59,59 +50,43 @@
                     </select>
                 </div>
 
-                <button onclick="openPackagesModal()" class="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-black font-extrabold text-xs py-3 rounded-xl shadow-lg flex items-center justify-center space-x-2">
-                    <span>💎 Upgrade Pro ($15 - $50)</span>
+                <button onclick="openPackagesModal()" class="w-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 text-black font-black text-xs py-3 rounded-xl shadow-lg">
+                    💎 Pro Packages ($15 - $50)
                 </button>
             </div>
         </div>
 
-        <div class="p-2 border-t border-gray-800 text-center text-[10px] text-gray-500">
-            Nexus AI Engine v5.0 • Binance Pay Verified
+        <div class="text-center text-[10px] text-gray-500 border-t border-slate-800 pt-3">
+            Binance Pay Merchant ID: 1243962107
         </div>
     </aside>
 
-    <!-- Main Workspace -->
+    <!-- Main Chat Workspace -->
     <main class="flex-1 flex flex-col p-3 md:p-6 justify-between h-[calc(100vh-55px)] md:h-screen">
         
-        <div class="hidden md:flex justify-between items-center mb-4">
-            <div>
-                <h2 class="text-lg font-bold text-white">Nexus Master Workspace</h2>
-                <p class="text-xs text-gray-400">Chat, Edit Images, or Talk via Voice in any language</p>
-            </div>
-            <button onclick="openVoiceModal()" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs px-4 py-2 rounded-xl shadow flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-black animate-ping"></span>
-                <span>Live Voice Mode</span>
-            </button>
-        </div>
-
-        <!-- Chat Log Display -->
-        <div class="flex-1 glass rounded-2xl p-4 overflow-y-auto space-y-3 mb-3" id="chat-box">
-            <div class="bg-gray-900/90 p-3.5 rounded-2xl max-w-xl text-xs border border-gray-800 leading-relaxed shadow">
+        <div id="chat-box" class="flex-1 glass-panel rounded-2xl p-4 overflow-y-auto space-y-3 mb-3">
+            <div class="bg-slate-900/90 p-3.5 rounded-2xl max-w-xl text-xs border border-slate-800 leading-relaxed">
                 <strong class="text-cyan-400 block mb-1">Nexus AI Engine</strong>
-                Salam! Welcome to Nexus AI.<br>
-                • Select any Top AI Model from the dropdown.<br>
-                • Upload an image and type "edit this image" to process.<br>
-                • Tap microphone button for Voice Conversation.
+                Welcome to Nexus AI! How can I assist you today?
             </div>
         </div>
 
-        <!-- Attached Image Preview Bar -->
-        <div id="image-preview-bar" class="hidden mb-2 p-2 glass rounded-xl flex items-center justify-between">
+        <div id="image-preview-bar" class="hidden mb-2 p-2 glass-panel rounded-xl flex items-center justify-between">
             <div class="flex items-center space-x-2">
-                <img id="image-preview" class="w-10 h-10 object-cover rounded-lg border border-gray-700">
-                <span class="text-xs text-cyan-300 font-medium">Image attached for editing</span>
+                <img id="image-preview" class="w-10 h-10 object-cover rounded-lg border border-slate-700">
+                <span class="text-xs text-cyan-300">Image attached for editing</span>
             </div>
             <button onclick="clearImage()" class="text-red-400 font-bold text-xs px-2">✕ Remove</button>
         </div>
 
-        <!-- Input Bar Controls -->
-        <div class="glass p-2 rounded-2xl flex items-center gap-2">
+        <!-- Input Control Panel -->
+        <div class="glass-panel p-2 rounded-2xl flex items-center gap-2">
             <label class="p-2 text-gray-400 hover:text-cyan-400 cursor-pointer">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
                 <input type="file" id="image-input" accept="image/*" class="hidden" onchange="previewImage(event)">
             </label>
 
-            <button onclick="openVoiceModal()" class="p-2 text-cyan-400 hover:text-cyan-300" title="Voice Talk">
+            <button onclick="toggleVoiceModal()" class="p-2 text-cyan-400 hover:text-cyan-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
             </button>
 
@@ -123,88 +98,75 @@
         </div>
     </main>
 
-    <!-- Voice Modal -->
-    <div id="voice-overlay" class="fixed inset-0 bg-gray-950/95 backdrop-blur-xl hidden z-50 flex flex-col items-center justify-between p-6">
+    <!-- Real-time Voice Modal -->
+    <div id="voice-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden z-50 flex flex-col items-center justify-between p-6">
         <div class="w-full flex justify-between items-center">
             <span class="text-xs font-bold text-cyan-400">NEXUS LIVE VOICE MODE</span>
-            <button onclick="closeVoiceModal()" class="text-gray-400 text-lg font-bold">✕</button>
+            <button onclick="toggleVoiceModal()" class="text-gray-400 font-bold">✕</button>
         </div>
 
         <div class="flex flex-col items-center space-y-4 text-center">
-            <div id="orb" class="w-28 h-28 rounded-full bg-gradient-to-tr from-cyan-500 via-indigo-500 to-purple-600 flex items-center justify-center pulse-ring shadow-2xl">
-                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+            <div class="w-24 h-24 rounded-full bg-cyan-500 flex items-center justify-center pulse-anim shadow-2xl">
+                <svg class="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
             </div>
-            <p id="voice-status" class="text-cyan-200 text-sm font-semibold">Tap 'Start Speaking'</p>
-            <p id="voice-transcript" class="text-xs text-gray-400 max-w-xs italic"></p>
+            <p id="voice-status" class="text-cyan-200 text-sm font-semibold">Tap 'Start Listening'</p>
         </div>
 
         <div class="w-full flex space-x-3">
-            <button onclick="startVoiceRecognition()" class="flex-1 bg-cyan-500 text-black font-bold py-3 rounded-xl text-xs">Start Speaking</button>
-            <button onclick="closeVoiceModal()" class="bg-gray-800 text-white px-5 py-3 rounded-xl text-xs border border-gray-700">Close</button>
+            <button onclick="startListening()" class="flex-1 bg-cyan-500 text-black font-bold py-3 rounded-xl text-xs">Start Listening</button>
+            <button onclick="toggleVoiceModal()" class="bg-slate-800 text-white px-5 py-3 rounded-xl text-xs">Close</button>
         </div>
     </div>
 
-    <!-- Packages & Binance Payment Modal (Step 4 & 6) -->
+    <!-- Packages & Payment Modal -->
     <div id="packages-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-amber-500/40 w-full max-w-lg rounded-2xl p-5 text-white space-y-4 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-                <h3 class="text-base font-bold text-amber-400">💎 Upgrade Nexus AI Packages</h3>
+        <div class="bg-slate-900 border border-amber-500/40 w-full max-w-md rounded-2xl p-5 text-white space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-amber-400">💎 Pro Packages & Binance Payment</h3>
                 <button onclick="closePackagesModal()" class="text-gray-400 font-bold">✕</button>
             </div>
 
             <div class="space-y-3">
-                <div class="border border-gray-800 p-3 rounded-xl bg-gray-950/60 flex justify-between items-center">
+                <div onclick="buyPackage('starter', 15)" class="cursor-pointer border border-slate-800 p-3 rounded-xl hover:border-amber-400 transition flex justify-between items-center">
                     <div>
-                        <h4 class="font-bold text-xs text-white">Starter Package</h4>
-                        <p class="text-[10px] text-gray-400">Basic Multi-AI Access</p>
+                        <h4 class="font-bold text-xs">Starter Package</h4>
+                        <p class="text-[10px] text-gray-400">Basic Pro Multi-AI Access</p>
                     </div>
-                    <span class="text-amber-400 font-extrabold text-sm">$15</span>
+                    <span class="text-amber-400 font-extrabold">$15</span>
                 </div>
 
-                <div class="border border-amber-500/50 p-3 rounded-xl bg-amber-950/20 flex justify-between items-center">
+                <div onclick="buyPackage('pro', 30)" class="cursor-pointer border border-amber-500/50 p-3 rounded-xl bg-amber-950/20 flex justify-between items-center">
                     <div>
-                        <h4 class="font-bold text-xs text-amber-300">Pro Package (Recommended)</h4>
-                        <p class="text-[10px] text-gray-300">GPT-4o & Claude 3.5 Unlimited + HD Image Editing</p>
+                        <h4 class="font-bold text-xs text-amber-300">Pro Package</h4>
+                        <p class="text-[10px] text-gray-300">GPT-4o & Claude 3.5 + Image Editing</p>
                     </div>
-                    <span class="text-amber-400 font-extrabold text-sm">$30</span>
+                    <span class="text-amber-400 font-extrabold">$30</span>
                 </div>
 
-                <div class="border border-gray-800 p-3 rounded-xl bg-gray-950/60 flex justify-between items-center">
+                <div onclick="buyPackage('business', 50)" class="cursor-pointer border border-slate-800 p-3 rounded-xl hover:border-amber-400 transition flex justify-between items-center">
                     <div>
-                        <h4 class="font-bold text-xs text-white">Master Business Package</h4>
-                        <p class="text-[10px] text-gray-400">All Top AI Engines + Priority Support</p>
+                        <h4 class="font-bold text-xs">Business Package</h4>
+                        <p class="text-[10px] text-gray-400">All Top AI Models Unlimited</p>
                     </div>
-                    <span class="text-amber-400 font-extrabold text-sm">$50</span>
+                    <span class="text-amber-400 font-extrabold">$50</span>
                 </div>
             </div>
 
-            <!-- Binance Payment Deposit Info (Step 6) -->
-            <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-center space-y-2">
-                <p class="text-xs font-bold text-amber-400">💰 Direct Payment via Binance Pay</p>
-                <p class="text-[11px] text-gray-300">Send package amount to Binance Pay ID:</p>
-                <div class="bg-gray-950 p-2 rounded-lg font-mono text-cyan-300 font-bold text-sm tracking-wider select-all">
-                    1243962107
-                </div>
-                <p class="text-[10px] text-gray-400">Payment automatically deposits to Binance Account ID: 1243962107</p>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center space-y-1">
+                <p class="text-[11px] text-gray-400">Direct Binance Pay ID:</p>
+                <p class="font-mono text-cyan-300 font-bold text-sm tracking-wider select-all">1243962107</p>
+                <p class="text-[9px] text-gray-500">Payments automatically route to Binance Account ID: 1243962107</p>
             </div>
         </div>
     </div>
 
     <script>
         let attachedImageBase64 = null;
-        let activeRecognition = null;
+        let recognition = null;
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('hidden');
-        }
-
-        function openPackagesModal() {
-            document.getElementById('packages-modal').classList.remove('hidden');
-        }
-
-        function closePackagesModal() {
-            document.getElementById('packages-modal').classList.add('hidden');
-        }
+        function openPackagesModal() { document.getElementById('packages-modal').classList.remove('hidden'); }
+        function closePackagesModal() { document.getElementById('packages-modal').classList.add('hidden'); }
+        function toggleVoiceModal() { document.getElementById('voice-modal').classList.toggle('hidden'); }
 
         function previewImage(e) {
             const file = e.target.files[0];
@@ -225,75 +187,52 @@
             document.getElementById('image-preview-bar').classList.add('hidden');
         }
 
-        function speakAIResponse(text) {
+        function speakText(text) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const utter = new SpeechSynthesisUtterance(text);
-                utter.lang = 'ur-PK';
                 utter.rate = 1.0;
                 window.speechSynthesis.speak(utter);
             }
         }
 
-        function openVoiceModal() {
-            document.getElementById('voice-overlay').classList.remove('hidden');
-        }
-
-        function closeVoiceModal() {
-            if (activeRecognition) try { activeRecognition.stop(); } catch(e){}
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            document.getElementById('voice-overlay').classList.add('hidden');
-        }
-
-        function startVoiceRecognition() {
-            const statusLabel = document.getElementById('voice-status');
-            const transcriptLabel = document.getElementById('voice-transcript');
-
+        function startListening() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
-                statusLabel.innerText = "Browser Speech API not supported.";
+                alert("Speech recognition not supported in this browser.");
                 return;
             }
-
-            if (activeRecognition) try { activeRecognition.stop(); } catch(e){}
-
-            activeRecognition = new SpeechRec();
-            activeRecognition.continuous = false;
-            activeRecognition.interimResults = false;
-            activeRecognition.lang = 'ur-PK';
-
-            activeRecognition.onstart = function() {
-                statusLabel.innerText = "Listening... Bolna shuru karein!";
+            recognition = new SpeechRec();
+            recognition.onstart = () => { document.getElementById('voice-status').innerText = "Listening..."; };
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                document.getElementById('voice-status').innerText = "Processing...";
+                sendVoiceMsg(text);
             };
-
-            activeRecognition.onresult = function(event) {
-                const text = event.results[0][0].transcript;
-                transcriptLabel.innerText = '"' + text + '"';
-                statusLabel.innerText = "Nexus AI responding...";
-                sendVoiceMessage(text);
-            };
-
-            activeRecognition.onerror = function() {
-                statusLabel.innerText = "Tap 'Start Speaking' again.";
-            };
-
-            try { activeRecognition.start(); } catch(err){}
+            recognition.start();
         }
 
-        async function sendVoiceMessage(userText) {
+        async function sendVoiceMsg(text) {
             const selectedModel = document.getElementById('model-select').value;
-            try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: userText, model: selectedModel })
-                });
-                const data = await res.json();
-                document.getElementById('voice-status').innerText = "Nexus AI Speaking...";
-                speakAIResponse(data.reply);
-            } catch(e) {
-                document.getElementById('voice-status').innerText = "Error connecting.";
-            }
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: text, model: selectedModel })
+            });
+            const data = await res.json();
+            document.getElementById('voice-status').innerText = "Speaking response...";
+            speakText(data.reply);
+        }
+
+        async function buyPackage(packageId, amount) {
+            const res = await fetch('/api/payment/process', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: "user_123", package_id: packageId, amount: amount, payment_method: "binance" })
+            });
+            const data = await res.json();
+            alert(data.message + "\nBinance Pay ID: " + data.binance_pay_id);
+            closePackagesModal();
         }
 
         async function sendMsg() {
@@ -304,22 +243,19 @@
 
             if (!text && !attachedImageBase64) return;
 
-            let userHTML = `<div class="bg-cyan-950/70 text-cyan-100 p-3 rounded-2xl max-w-[85%] ml-auto text-xs border border-cyan-800/50">`;
-            if (attachedImageBase64) {
-                userHTML += `<img src="${attachedImageBase64}" class="w-28 h-28 object-cover rounded-xl mb-1 border border-cyan-700">`;
-            }
+            let userHTML = `<div class="bg-cyan-950/60 text-cyan-100 p-3 rounded-2xl max-w-[85%] ml-auto text-xs border border-cyan-800/40">`;
+            if (attachedImageBase64) userHTML += `<img src="${attachedImageBase64}" class="w-24 h-24 object-cover rounded-lg mb-1">`;
             if (text) userHTML += `<p>${text}</p>`;
             userHTML += `</div>`;
 
             chatBox.innerHTML += userHTML;
-
             const currentImg = attachedImageBase64;
             clearImage();
             input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
             const loadId = 'load-' + Date.now();
-            chatBox.innerHTML += `<div id="${loadId}" class="bg-gray-900/90 p-3 rounded-2xl max-w-[85%] text-xs text-gray-400 italic">Nexus AI processing...</div>`;
+            chatBox.innerHTML += `<div id="${loadId}" class="bg-slate-900/90 p-3 rounded-2xl max-w-[85%] text-xs text-gray-400 italic">Nexus AI processing...</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
@@ -332,13 +268,13 @@
 
                 let replyContent = data.reply;
                 if (data.image_url) {
-                    replyContent += `<br><br><img src="${data.image_url}" class="w-64 h-64 object-cover rounded-xl border border-cyan-500 shadow-lg mt-2">`;
+                    replyContent += `<br><img src="${data.image_url}" class="w-60 h-60 object-cover rounded-xl border border-cyan-500 shadow-md mt-2">`;
                 }
 
-                document.getElementById(loadId).outerHTML = `<div class="bg-gray-900/90 p-3.5 rounded-2xl max-w-[85%] text-xs border border-gray-800 leading-relaxed shadow"><strong class="text-cyan-400 block mb-1">Nexus AI [${selectedModel.toUpperCase()}]</strong>${replyContent}</div>`;
-                speakAIResponse(data.reply);
-            } catch(err) {
-                document.getElementById(loadId).outerHTML = `<div class="bg-gray-900/90 p-3.5 rounded-2xl max-w-[85%] text-xs border border-gray-800 leading-relaxed shadow"><strong class="text-cyan-400 block mb-1">Nexus AI</strong>Connection Error. Please try again.</div>`;
+                document.getElementById(loadId).outerHTML = `<div class="bg-slate-900/90 p-3.5 rounded-2xl max-w-[85%] text-xs border border-slate-800 leading-relaxed shadow"><strong class="text-cyan-400 block mb-1">Nexus AI [${selectedModel.toUpperCase()}]</strong>${replyContent}</div>`;
+                speakText(data.reply);
+            } catch(e) {
+                document.getElementById(loadId).outerHTML = `<div class="bg-slate-900/90 p-3.5 rounded-2xl max-w-[85%] text-xs border border-slate-800 text-red-400">Connection error. Please try again.</div>`;
             }
 
             chatBox.scrollTop = chatBox.scrollHeight;
