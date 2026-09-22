@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import os
@@ -14,7 +14,6 @@ app = FastAPI(
     version="2.5.0"
 )
 
-# CORS Configuration for Vercel / Replit Frontends
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,7 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Core Identity Constants
 IDENTITY_RESPONSE = "Main Nexus AI hu aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai."
 
 SYSTEM_PROMPT = """You are Nexus AI, an advanced multi-model AI assistant developed exclusively by Mr. Sadam Hussain son of Jehanzeb.
@@ -31,7 +29,6 @@ You support Urdu, Pashto, Roman Urdu, and English languages naturally.
 Whenever asked about who created you, who made you, or your identity, always state clearly in the user's language that you were created by Mr. Sadam Hussain son of Jehanzeb.
 Provide helpful, concise, intelligent, and accurate responses for trading, coding, image analysis, and general chat."""
 
-# Model Mapping for OpenRouter / Gemini Fallbacks
 MODEL_MAP = {
     "auto": "google/gemini-2.0-flash-lite-001",
     "gpt-4o": "openai/gpt-4o-mini",
@@ -49,19 +46,65 @@ class ChatPayload(BaseModel):
     voice_mode: Optional[bool] = False
     history: Optional[List[Dict[str, str]]] = []
 
-@app.get("/")
-async def root():
-    return {
-        "status": "online",
-        "service": "Nexus AI Engine API Server",
-        "creator": "Mr. Sadam Hussain son of Jehanzeb",
-        "version": "2.5.0",
-        "supported_models": list(MODEL_MAP.keys())
-    }
+# 1. Main Home Route - Renders Full Web UI
+@app.get("/", response_class=HTMLResponse)
+async def serve_home_page():
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white font-sans min-h-screen flex flex-col">
+    <header class="p-4 border-b border-gray-800 bg-gray-900 flex justify-between items-center">
+        <h1 class="font-bold text-lg text-cyan-400">NEXUS AI</h1>
+        <span class="text-xs text-gray-400">By Mr. Sadam Hussain</span>
+    </header>
+    
+    <main class="flex-1 p-4 flex flex-col justify-between max-w-4xl mx-auto w-full">
+        <div id="chat-box" class="space-y-4 overflow-y-auto mb-4 flex-1">
+            <div class="bg-gray-800 p-3.5 rounded-xl text-sm border border-gray-700">
+                <strong class="text-cyan-400 block mb-1">Nexus AI Engine</strong>
+                Salam! Main Nexus AI hu. Mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.
+            </div>
+        </div>
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "engine": "active"}
+        <div class="flex gap-2">
+            <input type="text" id="user-input" placeholder="Apna sawal likhein..." class="flex-1 bg-gray-900 border border-gray-800 p-3 rounded-xl text-sm focus:outline-none focus:border-cyan-500">
+            <button onclick="sendMessage()" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-6 py-3 rounded-xl text-sm">Send</button>
+        </div>
+    </main>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML += `<div class="bg-cyan-950 text-cyan-100 p-3.5 rounded-xl text-sm ml-auto max-w-lg mb-2">${text}</div>`;
+            input.value = '';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+                chatBox.innerHTML += `<div class="bg-gray-800 p-3.5 rounded-xl text-sm border border-gray-700 mb-2"><strong class="text-cyan-400 block mb-1">Nexus AI</strong>${data.reply}</div>`;
+            } catch (e) {
+                chatBox.innerHTML += `<div class="bg-gray-800 p-3.5 rounded-xl text-sm border border-gray-700 mb-2"><strong class="text-cyan-400 block mb-1">Nexus AI</strong>Main Nexus AI hu aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai.</div>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
+"""
 
 def call_openrouter_api(messages: List[Dict[str, Any]], model_id: str) -> str:
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -95,17 +138,14 @@ def call_openrouter_api(messages: List[Dict[str, Any]], model_id: str) -> str:
             if "choices" in res_data and len(res_data["choices"]) > 0:
                 return res_data["choices"][0]["message"]["content"]
     except Exception as e:
-        print(f"OpenRouter API Call Error: {e}")
+        print(f"API Error: {e}")
     return ""
 
 def process_identity_check(text: str) -> bool:
-    keywords = [
-        "kisne banaya", "who made", "who created", "who is your creator",
-        "da cha ye", "cha jor kare", "owner", "creator", "sadam"
-    ]
-    lowered = text.lower()
-    return any(kw in lowered for kw in keywords)
+    keywords = ["kisne banaya", "who made", "who created", "who is your creator", "da cha ye", "cha jor kare", "owner", "creator", "sadam"]
+    return any(kw in text.lower() for kw in keywords)
 
+# 2. API Endpoints
 @app.post("/api/chat")
 @app.post("/api/chat/v2")
 async def handle_chat_request(payload: ChatPayload):
@@ -114,74 +154,28 @@ async def handle_chat_request(payload: ChatPayload):
     selected_model_key = payload.model if payload.model in MODEL_MAP else "auto"
     target_model = MODEL_MAP[selected_model_key]
 
-    # Check creator identity trigger
     if user_message and process_identity_check(user_message):
-        return {
-            "reply": IDENTITY_RESPONSE,
-            "response": IDENTITY_RESPONSE,
-            "message": IDENTITY_RESPONSE,
-            "model_used": selected_model_key
-        }
+        return {"reply": IDENTITY_RESPONSE, "response": IDENTITY_RESPONSE}
 
-    # Construct conversation history
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     
-    if payload.history:
-        for item in payload.history:
-            if "role" in item and "content" in item:
-                messages.append({"role": item["role"], "content": item["content"]})
-
-    # Image handling logic
     if user_image:
-        content_payload = []
-        if user_message:
-            content_payload.append({"type": "text", "text": user_message})
-        else:
-            content_payload.append({"type": "text", "text": "Analyze and describe this image in detail."})
-        
-        content_payload.append({
-            "type": "image_url",
-            "image_url": {"url": user_image}
-        })
+        content_payload = [{"type": "text", "text": user_message or "Analyze this image."}]
+        content_payload.append({"type": "image_url", "image_url": {"url": user_image}})
         messages.append({"role": "user", "content": content_payload})
     else:
-        if user_message:
-            messages.append({"role": "user", "content": user_message})
-        else:
-            messages.append({"role": "user", "content": "Hello Nexus AI"})
+        messages.append({"role": "user", "content": user_message or "Hello"})
 
-    # Primary API Call
     ai_reply = call_openrouter_api(messages, target_model)
 
-    # Secondary Fallback Model Call
-    if not ai_reply and target_model != MODEL_MAP["auto"]:
-        ai_reply = call_openrouter_api(messages, MODEL_MAP["auto"])
-
-    # Final Default Safe Fallback
     if not ai_reply:
-        if user_message:
-            ai_reply = f"Nexus AI [{selected_model_key.upper()}]: Aapka paigham mil gaya hai. Main Urdu, Pashto aur English samajhta hu. Aap koi bhi sawal pooch sakte hain!"
-        else:
-            ai_reply = IDENTITY_RESPONSE
+        ai_reply = IDENTITY_RESPONSE if not user_message else f"Nexus AI: Aapka paigham mil gaya hai."
 
-    # Return multi-key JSON response to ensure index.html frontend never gets undefined
-    return {
-        "reply": ai_reply,
-        "response": ai_reply,
-        "message": ai_reply,
-        "status": "success",
-        "model_used": selected_model_key,
-        "has_image": bool(user_image)
-    }
+    return {"reply": ai_reply, "response": ai_reply, "status": "success"}
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=200,
-        content={
-            "reply": IDENTITY_RESPONSE,
-            "response": IDENTITY_RESPONSE,
-            "message": IDENTITY_RESPONSE,
-            "status": "fallback_recovered"
-        }
+        content={"reply": IDENTITY_RESPONSE, "response": IDENTITY_RESPONSE}
     )
