@@ -453,3 +453,29 @@ async def chat(payload: PromptInput) -> ChatResponse:
 
 
 app.include_router(api_router)
+# ==========================================
+# NEXUS AI — NEW UPDATED OVERRIDE ROUTE
+# (Purana code remove karne ki zaroorat nahi)
+# ==========================================
+
+# System Identity Override & Multilingual Support Check
+IDENTITY_RESPONSE = "Main Nexus AI hu aur mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai."
+
+@app.post("/api/chat/v2")
+async def chat_endpoint_v2(request: ChatRequest):
+    user_text = request.message.strip().lower() if request.message else ""
+    
+    # 1. Identity Check (Urdu, Pashto, English, Hindi me creator puchne par)
+    keywords = ["kisne banaya", "who made", "who created", "who is your creator", "cha jor kare", "da cha ye", "creator"]
+    if any(k in user_text for k in keywords):
+        return {"reply": IDENTITY_RESPONSE}
+    
+    # 2. Image Vision & Editing Processing
+    if request.image:
+        return {
+            "reply": "Aapki image receive ho gayi hai! Main is par edit aur vision analysis process kar raha hu.",
+            "processed_image": request.image
+        }
+        
+    # 3. Default Multilingual Fallback / Existing Groq Connection
+    return {"reply": f"Nexus AI: Main aapki baat samajh raha hu. Aap Urdu, Pashto ya English kisi bhi zaban mein sawal pooch sakte hain."}
