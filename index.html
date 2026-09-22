@@ -4,21 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nexus AI — Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0b0f17; color: #e2e8f0; font-family: sans-serif; }
+        body { background-color: #0b0f17; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
         .sidebar { background-color: #111827; }
-        .active-tab { background-color: #1f2937; border-left: 4px solid #06b6d4; }
+        .active-tab { background-color: #1f2937; border-left: 4px solid #06b6d4; color: #ffffff; }
         .card { background-color: #111827; border: 1px solid #1f2937; }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <!-- Top Header / Navigation Bar for Mobile -->
+    <header class="md:hidden flex items-center justify-between p-4 bg-gray-900 border-b border-gray-800">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold text-base shadow-lg">NX</div>
+            <div>
+                <h1 class="font-bold text-sm text-white">NEXUS AI</h1>
+                <p class="text-[10px] text-gray-400">One Nexus. Infinite AI.</p>
+            </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white p-2">
+            svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+    </header>
 
     <!-- Sidebar Navigation -->
-    <aside class="w-64 sidebar flex flex-col justify-between p-4 flex-shrink-0">
+    <aside id="sidebar-menu" class="hidden md:flex w-full md:w-64 sidebar flex-col justify-between p-4 flex-shrink-0 border-r border-gray-800">
         <div>
-            <!-- Brand Logo Header -->
-            <div class="flex items-center space-x-3 mb-8 px-2">
+            <!-- Brand Logo Header for Desktop -->
+            <div class="hidden md:flex items-center space-x-3 mb-8 px-2">
                 <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">NX</div>
                 <div>
                     <h1 class="font-bold text-lg text-white">NEXUS AI</h1>
@@ -41,7 +55,7 @@
         </div>
 
         <!-- Subscription Upgrade CTA -->
-        <div class="card p-4 rounded-xl text-center border-cyan-500/30">
+        <div class="card p-4 rounded-xl text-center border-cyan-500/30 mt-6 md:mt-0">
             <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-1">Upgrade Plan</p>
             <p class="text-xs text-gray-400 mb-3">Unlock Pro Features & All-in-One Suite</p>
             <button class="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg text-xs font-bold text-white shadow-md hover:opacity-90">View Packages ($15-$50)</button>
@@ -49,50 +63,50 @@
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col overflow-y-auto p-6">
+    <main class="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto">
         
         <!-- 1. Multi-AI Chat Section -->
-        <section id="section-chat" class="flex-1 flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">Multi-AI Chat Assistant</h2>
-                <select class="bg-gray-800 text-xs border border-gray-700 text-gray-300 rounded-lg px-3 py-2">
+        <section id="section-chat" class="flex-1 flex flex-col min-h-[500px]">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
+                <h2 class="text-lg md:text-xl font-bold text-white">Multi-AI Chat Assistant</h2>
+                <select class="bg-gray-800 text-xs border border-gray-700 text-gray-300 rounded-lg px-3 py-2 w-full sm:w-auto">
                     <option>Auto-Select Best AI</option>
                     <option>ChatGPT-4o</option>
                     <option>Claude 3.5 Sonnet</option>
                     <option>Gemini 1.5 Pro</option>
                 </select>
             </div>
-            <div class="flex-1 card rounded-xl p-4 overflow-y-auto mb-4 space-y-4" id="chat-box">
+            <div class="flex-1 card rounded-xl p-4 overflow-y-auto mb-4 space-y-4 min-h-[300px]" id="chat-box">
                 <div class="bg-gray-800 p-3 rounded-lg max-w-xl text-sm">
-                    <strong>Nexus AI:</strong> Assalam-o-Alaikum! Main Nexus AI hu. Aaj main aapki kya madad kar sakta hu?
+                    <strong class="text-cyan-400">Nexus AI:</strong> Assalam-o-Alaikum! Main Nexus AI hu. Aaj main aapki kya madad kar sakta hu?
                 </div>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex gap-2">
                 <input type="text" placeholder="Ask anything to Nexus AI..." class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500">
-                <button class="bg-cyan-500 px-6 py-3 rounded-lg font-bold text-black hover:bg-cyan-400 text-sm">Send</button>
+                <button class="bg-cyan-500 px-5 py-3 rounded-lg font-bold text-black hover:bg-cyan-400 text-sm">Send</button>
             </div>
         </section>
 
         <!-- 2. Image Studio Section -->
         <section id="section-image" class="hidden space-y-6">
-            <h2 class="text-xl font-bold text-white">Image Studio & Editing Suite</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h2 class="text-lg md:text-xl font-bold text-white">Image Studio & Editing Suite</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-cyan-400">✨ Prompt to Image</h3>
                     <p class="text-xs text-gray-400">Generate HD 4K AI images from text description.</p>
-                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-20" placeholder="Describe the image..."></textarea>
+                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-20 text-white" placeholder="Describe the image..."></textarea>
                     <button class="w-full bg-cyan-600 py-2 rounded-lg text-xs font-bold text-white">Generate Image</button>
                 </div>
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-purple-400">🖼️ Background Remover</h3>
                     <p class="text-xs text-gray-400">Remove background from photos automatically in 1-click.</p>
-                    <input type="file" class="text-xs text-gray-400">
+                    <input type="file" class="w-full text-xs text-gray-400 bg-gray-800 p-2 rounded-lg border border-gray-700">
                     <button class="w-full bg-purple-600 py-2 rounded-lg text-xs font-bold text-white">Remove Background</button>
                 </div>
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-blue-400">🔍 HD Upscaler & Eraser</h3>
                     <p class="text-xs text-gray-400">Enhance image quality or remove unwanted objects.</p>
-                    <input type="file" class="text-xs text-gray-400">
+                    <input type="file" class="w-full text-xs text-gray-400 bg-gray-800 p-2 rounded-lg border border-gray-700">
                     <button class="w-full bg-blue-600 py-2 rounded-lg text-xs font-bold text-white">Enhance Image</button>
                 </div>
             </div>
@@ -100,18 +114,18 @@
 
         <!-- 3. Video Studio Section -->
         <section id="section-video" class="hidden space-y-6">
-            <h2 class="text-xl font-bold text-white">AI Video Studio & Generator</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h2 class="text-lg md:text-xl font-bold text-white">AI Video Studio & Generator</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-cyan-400">🎬 Text to Video Creator</h3>
                     <p class="text-xs text-gray-400">Create AI Reels & short videos using prompts.</p>
-                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24" placeholder="Describe the video scene..."></textarea>
+                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24 text-white" placeholder="Describe the video scene..."></textarea>
                     <button class="w-full bg-cyan-600 py-2 rounded-lg text-xs font-bold text-white">Create Video</button>
                 </div>
                 <div class="card p-5 rounded-xl space-y-3">
                     <h3 class="font-bold text-purple-400">🎙️ AI Voiceover & Captions</h3>
                     <p class="text-xs text-gray-400">Convert text script into ultra-realistic AI voices.</p>
-                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24" placeholder="Enter script for voiceover..."></textarea>
+                    <textarea class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs h-24 text-white" placeholder="Enter script for voiceover..."></textarea>
                     <button class="w-full bg-purple-600 py-2 rounded-lg text-xs font-bold text-white">Generate Audio</button>
                 </div>
             </div>
@@ -127,6 +141,14 @@
             });
             document.getElementById('section-' + tab).classList.remove('hidden');
             document.getElementById('tab-' + tab).classList.add('active-tab');
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar-menu').classList.add('hidden');
+            }
+        }
+
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar-menu');
+            sidebar.classList.toggle('hidden');
         }
     </script>
 </body>
