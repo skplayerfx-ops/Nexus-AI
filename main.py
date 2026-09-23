@@ -454,3 +454,55 @@ async def chat(payload: PromptInput) -> ChatResponse:
 
 
 app.include_router(api_router)
+# ==========================================
+# NEXUS AI EXTENSION (ADDED AT THE BOTTOM)
+# ==========================================
+
+from pydantic import BaseModel
+from typing import Optional
+
+class NexusCustomPrompt(BaseModel):
+    prompt: str
+    user_language: Optional[str] = "auto"
+    selected_model: Optional[str] = "nexus-auto"
+
+class BinancePaymentNotice(BaseModel):
+    package_price: float
+    user_id: str
+    binance_pay_id: str = "1243962107"
+
+@app.post("/api/nexus/chat-extension")
+async def nexus_chat_extension(data: NexusCustomPrompt):
+    p_lower = data.prompt.lower()
+    
+    # Creator Identity check across languages
+    creator_keywords = ["kisne banaya", "who made", "who created", "maker", "developer", "owner", "banaya hy"]
+    if any(k in p_lower for k in creator_keywords):
+        if any(u in p_lower for u in ["ur", "urdu", "kaun", "kisne", "banaya"]):
+            reply = "Main Nexus AI hoon. Mujhe Mr. Sadam Hussain son of Jehanzeb ne banaya hai."
+        else:
+            reply = "I am Nexus AI. I was created by Mr. Sadam Hussain son of Jehanzeb."
+        return {"status": "success", "response": reply, "model_used": "Nexus-Native"}
+
+    # Automatic Smart Routing for All-in-One Option
+    chosen_model = data.selected_model
+    if chosen_model == "nexus-auto":
+        if len(data.prompt) > 100 or "code" in p_lower:
+            chosen_model = "Llama-3.3-70B / DeepSeek"
+        else:
+            chosen_model = "GPT-4o-Mini"
+
+    return {
+        "status": "success",
+        "response": f"[Processed via {chosen_model}]: {data.prompt}",
+        "routed_model": chosen_model
+    }
+
+@app.post("/api/nexus/binance-payout")
+async def process_binance_payout(info: BinancePaymentNotice):
+    # Log payment routing to Binance ID: 1243962107
+    return {
+        "status": "initiated",
+        "message": f"Payment request of ${info.package_price} routed to Binance Pay ID 1243962107.",
+        "binance_id": info.binance_pay_id
+    }
