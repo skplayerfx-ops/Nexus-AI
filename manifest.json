@@ -1,0 +1,18 @@
+{
+  "short_name": "Nexus AI",
+  "name": "Nexus AI Platform",
+  "icons": [
+    {
+      "src": "image_4.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0b1216",
+  "theme_color": "#0b1216",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}
