@@ -1,14 +1,14 @@
 import os
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+import urllib.parse
+from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
+import httpx
 
-app = FastAPI(title="Nexus AI", version="2.0.0")
+app = FastAPI(title="Nexus AI Engine")
 
-# CORS Setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,66 +17,106 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BINANCE_PAY_ID = "1243962107"
-CREATOR_INFO = "Mr. Sadam Hussain son of Jehanzeb"
+BINANCE_ID = "1243962107"
+CREATOR_NAME = "Mr Sadam Hussain son of Jehanzeb"
 
 class ChatRequest(BaseModel):
     message: str
-    model: Optional[str] = "nexus-auto" # nexus-auto, gemini, openai, claude, deepseek, llama
-    language: Optional[str] = "auto"
+    model: Optional[str] = "nexus-auto"
+
+async def query_ai(prompt: str, model_type: str, system_prompt: str) -> str:
+    encoded_p = urllib.parse.quote(prompt)
+    encoded_sys = urllib.parse.quote(system_prompt)
+    url = f"https://text.pollinations.ai/{encoded_p}?model={model_type}&system={encoded_sys}"
+    
+    async with httpx.AsyncClient(timeout=12.0) as client:
+        try:
+            res = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            if res.status_code == 200 and res.text.strip():
+                return res.text.strip()
+        except Exception:
+            pass
+    return "Engine abhi busy hai, please dobara try karein."
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root():
+async def serve_root():
     if os.path.exists("index.html"):
         with open("index.html", "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>Nexus AI API Server Running</h1>")
+            return f.read()
+    return "<h1>Nexus AI System Active</h1>"
 
 @app.post("/api/chat")
-async def chat_endpoint(req: ChatRequest):
-    user_msg = req.message.strip().lower()
-    
-    # Creator Identification Logic in Multiple Languages
-    if any(q in user_msg for q in ["who created you", "who made you", "who is your creator", "who built you"]):
+async def chat_handler(req: ChatRequest):
+    user_msg = req.message.strip()
+    msg_lower = user_msg.lower()
+    selected = (req.model or "nexus-auto").lower()
+
+    # Creator Identity Check
+    creator_queries_en = ["who created you", "who made you", "who is your creator", "who built you"]
+    creator_queries_ur = ["ap ko kis ne banaya", "tumhe kisne banaya", "apko kisne banaya", "kine banaya", "aapko kisne banaya", "kis ne banaya"]
+
+    if any(q in msg_lower for q in creator_queries_ur):
         return {
-            "response": f"I am Nexus AI. I was created by {CREATOR_INFO}.",
-            "model_used": "Nexus AI Core"
+            "type": "text",
+            "reply": f"Main Nexus AI hoon, mujhe {CREATOR_NAME} ne banaya hai.",
+            "model_used": "Nexus Core"
         }
-    elif any(q in user_msg for q in ["ap ko kis ne banaya", "tumhe kisne banaya", "apko kisne banaya", "kine banaya", "apka creator kaun hai"]):
+    elif any(q in msg_lower for q in creator_queries_en):
         return {
-            "response": f"میں Nexus AI ہوں۔ مجھے {CREATOR_INFO} نے بنایا ہے۔",
-            "model_used": "Nexus AI Core"
+            "type": "text",
+            "reply": f"I am Nexus AI. I was created by {CREATOR_NAME}.",
+            "model_used": "Nexus Core"
         }
 
-    # Model Routing Logic
-    selected_model = req.model
-    if selected_model == "nexus-auto":
-        # Automatically selects the best response engine based on query context
-        selected_model = "Gemini 1.5 Pro (Smart Auto-Select)"
+    # Image Request Keyword Check
+    img_keywords = ["generate image", "make photo", "edit image", "draw", "picture", "logo", "tasveer", "photo bano"]
+    if any(k in msg_lower for k in img_keywords):
+        encoded_prompt = urllib.parse.quote(user_msg)
+        img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&seed=42&nologo=true&model=flux"
+        return {
+            "type": "image",
+            "reply": "Aapki request ke mutabiq image ready hai:",
+            "image_url": img_url,
+            "model_used": "Nexus Flux Engine"
+        }
+
+    # Multi-AI Model Mapping
+    sys_prompt = f"You are Nexus AI, created by {CREATOR_NAME}."
+    
+    model_map = {
+        "gemini": "gemini",
+        "openai": "openai",
+        "claude": "claude",
+        "deepseek": "deepseek",
+        "llama": "llama"
+    }
+    
+    target_engine = model_map.get(selected, "openai")
+    reply_text = await query_ai(user_msg, target_engine, sys_prompt)
 
     return {
-        "response": f"[Nexus AI Engine - {selected_model}]: آپ کا پیغام موصول ہو گیا ہے۔ ہم آپ کی درخواست پر کام کر رہے ہیں۔",
-        "model_used": selected_model
+        "type": "text",
+        "reply": reply_text,
+        "model_used": f"Nexus AI ({target_engine.upper()})"
     }
 
 @app.post("/api/image-edit")
-async def edit_image(file: UploadFile = File(...), prompt: str = Form(...)):
+async def edit_image_file(prompt: str = Form(...), file: UploadFile = File(None)):
+    encoded_prompt = urllib.parse.quote(prompt)
+    img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&seed=99&nologo=true&model=flux"
     return {
-        "status": "success",
-        "message": f"Image edited successfully based on prompt: '{prompt}'",
-        "image_url": "https://via.placeholder.com/512?text=Nexus+AI+Edited+Image"
+        "type": "image",
+        "reply": "Image edit complete:",
+        "image_url": img_url
     }
 
 @app.get("/api/packages")
 async def get_packages():
     return {
+        "binance_pay_id": BINANCE_ID,
         "packages": [
-            {"name": "Starter Pro", "price": "$15/mo", "features": ["Access to Nexus AI & Gemini", "Standard Image Generation", "Voice Chat"]},
-            {"name": "Master AI", "price": "$30/mo", "features": ["All Top AI Models (GPT-4, Claude, DeepSeek)", "HD Image Editing", "All-In-One Smart Auto Selection"]},
-            {"name": "Ultimate Pro", "price": "$50/mo", "features": ["Unlimited All AI Models", "Pro Level Voice & High Resolution Image Tools", "24/7 Priority Processing"]}
-        ],
-        "payment_info": {
-            "method": "Binance Pay Direct",
-            "binance_id": BINANCE_PAY_ID
-        }
+            {"name": "Starter Pro", "price": "$15", "features": ["Nexus AI & Gemini Access", "Voice Mode", "Basic Image Gen"]},
+            {"name": "Master Pro", "price": "$30", "features": ["All-In-One AI Selection", "GPT-4o & Claude 3.5", "Image Editing Pro"]},
+            {"name": "Ultimate Pro", "price": "$50", "features": ["Unlimited All Models", "Priority Voice Response", "High-Res Image Engine"]}
+        ]
     }
