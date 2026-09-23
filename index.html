@@ -6,7 +6,23 @@
     <meta name="theme-color" content="#0b1216" />
     <link rel="icon" href="data:," />
     <title>Nexus AI</title>
-    <style>
+    <style><!-- PWA & Mobile Icons -->
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" type="image/png" href="/image_4.png" />
+<link rel="apple-touch-icon" href="/image_4.png" />
+<meta name="theme-color" content="#0b1216" />
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(
+        (reg) => console.log('Nexus PWA ServiceWorker Registered: ', reg.scope),
+        (err) => console.log('ServiceWorker Registration failed: ', err)
+      );
+    });
+  }
+</script>
+
       @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
 
       :root {
