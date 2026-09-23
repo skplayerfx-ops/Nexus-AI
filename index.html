@@ -386,3 +386,129 @@
     </script>
   </body>
 </html>
+<!-- ========================================== -->
+<!-- NEXUS AI EXTENSION UI (ADDED AT THE BOTTOM) -->
+<!-- ========================================== -->
+
+<style>
+  .nexus-ext-card {
+    background: #152229;
+    border: 1px solid #27373d;
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    color: #eaf4f1;
+    font-family: sans-serif;
+  }
+  .nexus-btn-pro {
+    background: linear-gradient(135deg, #f1b451, #e57e3b);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .nexus-modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  .nexus-modal-bg.active { display: flex; }
+  .nexus-modal-content {
+    background: #101a20;
+    border: 1px solid #54c4c3;
+    padding: 25px;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    color: #fff;
+  }
+  .nexus-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+  .nexus-plan-box { border: 1px solid #27373d; padding: 10px; border-radius: 8px; text-align: center; }
+</style>
+
+<div class="nexus-ext-card">
+  <h4>⚡ Nexus AI Control Panel Extension</h4>
+  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+    <button type="button" class="nexus-btn-pro" onclick="toggleNexusVoice()">🎙️ Voice On/Off</button>
+    <button type="button" class="nexus-btn-pro" onclick="openBinanceModal()">💳 Buy Pro Packages ($15-$50)</button>
+  </div>
+  
+  <label style="font-size: 12px;">Select AI Engine / Mode:</label>
+  <select id="nexusModelSelector" style="width: 100%; padding: 8px; background: #0b1216; color: #fff; border: 1px solid #27373d; border-radius: 6px;">
+    <option value="nexus-auto">✨ Nexus Auto (All-in-One Best AI Routing)</option>
+    <option value="nexus-native">🌟 Nexus AI Native Core</option>
+    <option value="gpt-4o">🤖 OpenAI GPT-4o</option>
+    <option value="gemini-pro">♊ Google Gemini Pro</option>
+    <option value="llama-70b">🦙 Meta Llama 3.3 70B</option>
+  </select>
+</div>
+
+<!-- Pro Membership Binance Modal -->
+<div class="nexus-modal-bg" id="binanceModal">
+  <div class="nexus-modal-content">
+    <h3>Upgrade to Nexus Pro</h3>
+    <p style="font-size: 13px; color: #8da19e;">Unlock Pro level image creation, fast voice chat, and all AI engines.</p>
+    
+    <div class="nexus-grid">
+      <div class="nexus-plan-box">
+        <h4>Basic</h4>
+        <p style="color: #f1b451;">$15</p>
+        <button class="nexus-btn-pro" onclick="payBinance(15)">Select</button>
+      </div>
+      <div class="nexus-plan-box">
+        <h4>Pro</h4>
+        <p style="color: #f1b451;">$30</p>
+        <button class="nexus-btn-pro" onclick="payBinance(30)">Select</button>
+      </div>
+      <div class="nexus-plan-box">
+        <h4>VIP</h4>
+        <p style="color: #f1b451;">$50</p>
+        <button class="nexus-btn-pro" onclick="payBinance(50)">Select</button>
+      </div>
+    </div>
+
+    <div id="binancePayDetails" style="display:none; background: #0b1216; padding: 10px; border-radius: 8px; border: 1px dashed #f1b451; margin-top: 10px;">
+      <p style="margin:0; font-size: 12px;">Send payment to Binance Pay ID:</p>
+      <strong style="color: #f1b451; font-size: 16px;">1243962107</strong>
+      <p style="margin:5px 0 0 0; font-size: 11px; color: #8da19e;">Funds are directly routed to the owner account.</p>
+    </div>
+
+    <button type="button" style="margin-top: 15px; background: transparent; color: #fff; border: 1px solid #27373d; padding: 8px 12px; border-radius: 6px; cursor: pointer;" onclick="closeBinanceModal()">Close</button>
+  </div>
+</div>
+
+<script>
+  let nexusVoiceActive = false;
+
+  function toggleNexusVoice() {
+    nexusVoiceActive = !nexusVoiceActive;
+    alert(nexusVoiceActive ? "Voice mode Enabled!" : "Voice mode Disabled!");
+  }
+
+  function openBinanceModal() {
+    document.getElementById("binanceModal").classList.add("active");
+  }
+
+  function closeBinanceModal() {
+    document.getElementById("binanceModal").classList.remove("active");
+  }
+
+  async function payBinance(amount) {
+    document.getElementById("binancePayDetails").style.display = "block";
+    try {
+      await fetch("/api/nexus/binance-payout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ package_price: amount, user_id: "user_session", binance_pay_id: "1243962107" })
+      });
+    } catch(e) {
+      console.log("Payout initiated local state.");
+    }
+  }
+</script>
