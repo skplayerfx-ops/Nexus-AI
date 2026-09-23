@@ -178,11 +178,16 @@ app.add_middleware(
 api_router = APIRouter(prefix="/api", tags=["Nexus AI"])
 
 
-@app.get("/", include_in_schema=False)
-@app.get("/api/", include_in_schema=False)
-@app.get("/api", include_in_schema=False)
-def hello_world() -> dict[str, str]:
-    return {"message": "Hello, World!"}
+import os
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_index():
+    for path in ["index.html", "./index.html", "../index.html"]:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+    return "<h1>Nexus AI Dashboard Active</h1>"
 
 
 @app.get("/api/healthz")
