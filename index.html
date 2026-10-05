@@ -469,8 +469,22 @@
     width: 90%;
     color: #fff;
   }
-  .nexus-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
-  .nexus-plan-box { border: 1px solid #27373d; padding: 10px; border-radius: 8px; text-align: center; }
+  .nexus-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+    gap: 15px; 
+    margin-top: 15px; 
+}
+
+.nexus-plan-box { 
+    background: #181a1b;
+    border: 1px solid #27373d; 
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    color: #eaf4f1;
+}
+
 </style>
 
 <div class="nexus-ext-card">
