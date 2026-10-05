@@ -652,23 +652,3 @@ function toggleNexusVoice() {
     }
   }
 </script>
-let selectedImageBase64 = null;
-
-function previewImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            selectedImageBase64 = e.target.result;
-            document.getElementById("uploadedImagePreview").src = selectedImageBase64;
-            document.getElementById("imagePreviewContainer").style.display = "block";
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function removeImage() {
-    selectedImageBase64 = null;
-    document.getElementById("imageUpload").value = "";
-    document.getElementById("imagePreviewContainer").style.display = "none";
-}
