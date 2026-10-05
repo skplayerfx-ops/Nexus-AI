@@ -548,61 +548,70 @@ function toggleNexusVoice() {
     
     if (nexusVoiceActive) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
         if (!SpeechRecognition) {
-            alert("Speech recognition is not supported in this browser.");
+            alert("Your browser does not support voice input. Please try Chrome or Safari.");
             nexusVoiceActive = false;
             return;
         }
         
-        recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        
-        recognition.onresult = function(event) {
-            const speechResult = event.results[0][0].transcript;
-            console.log("User Spoken: ", speechResult);
-            
-            // Chat input mein text dal kar automatic submit/process karna
-            const chatInput = document.getElementById("nexusChatInput") || document.querySelector("input[type='text']");
-            if (chatInput) {
-                chatInput.value = speechResult;
-                // Agar koi send function hai to usko yahan call kar sakte hain
-            }
-            
-            // AI ka bol kar jawab dena (Text-to-Speech)
-            speakResponse("You said: " + speechResult);
-        };
-        
-        recognition.onend = function() {
-            if (nexusVoiceActive) {
-                try { recognition.start(); } catch(e) {}
-            }
-        };
-        
         try {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            
+            recognition.onstart = function() {
+                console.log("Listening...");
+            };
+            
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                const chatInput = document.getElementById("nexusChatInput") || document.querySelector("input[type='text']");
+                if (chatInput) {
+                    chatInput.value = text;
+                }
+                speakResponse("You said: " + text);
+            };
+            
+            recognition.onerror = function(event) {
+                console.error("Speech recognition error:", event.error);
+                alert("Mic Error: " + event.error);
+                nexusVoiceActive = false;
+            };
+            
+            recognition.onend = function() {
+                if (nexusVoiceActive) {
+                    try { recognition.start(); } catch(e) {}
+                }
+            };
+            
             recognition.start();
-            speakResponse("Voice mode activated. You can talk now.");
-        } catch(e) {
-            console.error(e);
+            
+            // Text-to-Speech feedback
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance("Voice mode active. Speak now.");
+                window.speechSynthesis.speak(utterance);
+            }
+            
+        } catch(err) {
+            console.error(err);
+            alert("Could not start microphone. Check permissions.");
+            nexusVoiceActive = false;
         }
+        
     } else {
         if (recognition) {
             try { recognition.stop(); } catch(e) {}
         }
-        speakResponse("Voice mode deactivated.");
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance("Voice mode deactivated.");
+            window.speechSynthesis.speak(utterance);
+        }
     }
 }
 
-// AI Voice Output Function
-function speakResponse(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Pichli awaz roknay ke liye
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
-    }
-}
 
   function openBinanceModal() {
     document.getElementById("binanceModal").classList.add("active");
