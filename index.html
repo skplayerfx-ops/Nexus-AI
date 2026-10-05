@@ -547,7 +547,6 @@ function toggleNexusVoice() {
     nexusVoiceActive = !nexusVoiceActive;
     
     if (nexusVoiceActive) {
-        // Check if browser supports Speech Recognition
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             alert("Speech recognition is not supported in this browser.");
@@ -559,23 +558,19 @@ function toggleNexusVoice() {
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         
-        recognition.onstart = function() {
-            console.log("Voice listening started...");
-        };
-        
         recognition.onresult = function(event) {
             const speechResult = event.results[0][0].transcript;
             console.log("User Spoken: ", speechResult);
             
-            // Auto-fill input box if available
+            // Chat input mein text dal kar automatic submit/process karna
             const chatInput = document.getElementById("nexusChatInput") || document.querySelector("input[type='text']");
             if (chatInput) {
                 chatInput.value = speechResult;
+                // Agar koi send function hai to usko yahan call kar sakte hain
             }
-        };
-        
-        recognition.onerror = function(event) {
-            console.error("Speech recognition error", event.error);
+            
+            // AI ka bol kar jawab dena (Text-to-Speech)
+            speakResponse("You said: " + speechResult);
         };
         
         recognition.onend = function() {
@@ -586,7 +581,7 @@ function toggleNexusVoice() {
         
         try {
             recognition.start();
-            alert("Voice mode Enabled! Speak now...");
+            speakResponse("Voice mode activated. You can talk now.");
         } catch(e) {
             console.error(e);
         }
@@ -594,7 +589,18 @@ function toggleNexusVoice() {
         if (recognition) {
             try { recognition.stop(); } catch(e) {}
         }
-        alert("Voice mode Disabled!");
+        speakResponse("Voice mode deactivated.");
+    }
+}
+
+// AI Voice Output Function
+function speakResponse(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Pichli awaz roknay ke liye
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
     }
 }
 
