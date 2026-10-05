@@ -541,10 +541,62 @@
 <script>
   let nexusVoiceActive = false;
 
-  function toggleNexusVoice() {
+  let recognition = null;
+
+function toggleNexusVoice() {
     nexusVoiceActive = !nexusVoiceActive;
-    alert(nexusVoiceActive ? "Voice mode Enabled!" : "Voice mode Disabled!");
-  }
+    
+    if (nexusVoiceActive) {
+        // Check if browser supports Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Speech recognition is not supported in this browser.");
+            nexusVoiceActive = false;
+            return;
+        }
+        
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        
+        recognition.onstart = function() {
+            console.log("Voice listening started...");
+        };
+        
+        recognition.onresult = function(event) {
+            const speechResult = event.results[0][0].transcript;
+            console.log("User Spoken: ", speechResult);
+            
+            // Auto-fill input box if available
+            const chatInput = document.getElementById("nexusChatInput") || document.querySelector("input[type='text']");
+            if (chatInput) {
+                chatInput.value = speechResult;
+            }
+        };
+        
+        recognition.onerror = function(event) {
+            console.error("Speech recognition error", event.error);
+        };
+        
+        recognition.onend = function() {
+            if (nexusVoiceActive) {
+                try { recognition.start(); } catch(e) {}
+            }
+        };
+        
+        try {
+            recognition.start();
+            alert("Voice mode Enabled! Speak now...");
+        } catch(e) {
+            console.error(e);
+        }
+    } else {
+        if (recognition) {
+            try { recognition.stop(); } catch(e) {}
+        }
+        alert("Voice mode Disabled!");
+    }
+}
 
   function openBinanceModal() {
     document.getElementById("binanceModal").classList.add("active");
